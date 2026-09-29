@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +31,63 @@ void main() {
     expect(find.text('❤️'), findsOneWidget);
     expect(find.text('❤️ 1'), findsNothing);
     expect(find.byKey(const Key('reactionLabel-s-1-❤️')), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const Key('reactionLabel-s-1-❤️')))
+          .style
+          ?.fontFamily,
+      isNull,
+    );
+  });
+
+  testWidgets('iOS reaction emoji use the bundled font', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      await _pump(
+        tester,
+        FakeMessageRepository(
+          history: [
+            testMessageView(
+              id: 1,
+              text: 'Thanks',
+              reactions: [_reaction('❤️')],
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        tester
+            .widget<Text>(find.byKey(const Key('reactionLabel-s-1-❤️')))
+            .style
+            ?.fontFamily,
+        'Noto Emoji',
+      );
+      expect(
+        tester
+            .widget<Text>(find.byKey(const Key('messageText-s-1')))
+            .style
+            ?.fontFamily,
+        isNot('Noto Emoji'),
+      );
+
+      await tester.longPress(find.byKey(const Key('messageBubble-s-1')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<Text>(
+              find.descendant(
+                of: find.byKey(const Key('reactionChoice-❤️')),
+                matching: find.text('❤️'),
+              ),
+            )
+            .style
+            ?.fontFamily,
+        'Noto Emoji',
+      );
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 
   testWidgets('two reactions render the emoji and the count', (tester) async {

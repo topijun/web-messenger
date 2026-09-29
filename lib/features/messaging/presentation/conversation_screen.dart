@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:messenger_client/messenger_client.dart';
 import 'package:mobile_messenger/core/lifecycle/app_resume_guard.dart';
@@ -1255,6 +1257,26 @@ class _MessageBubble extends StatelessWidget {
                   )
                 else
                   Text(item.text, key: Key('messageText-${item.localKey}')),
+                
+                if (item.isEdited)
+                  Text(
+                    'Edited',
+                    key: Key('editedLabel-${item.localKey}'),
+                    style: theme.textTheme.labelSmall,
+                  ),
+                const SizedBox(height: 4),
+                if (item.isMine && !item.isDeleted)
+                  Text(
+                    _statusLabel(item.status),
+                    key: Key('receiptStatus-${item.localKey}'),
+                    style: theme.textTheme.labelSmall,
+                  ),
+                if (item.status == ConversationItemStatus.failed)
+                  TextButton(
+                    key: Key('retryMessage-${item.localKey}'),
+                    onPressed: onRetry,
+                    child: const Text('Retry'),
+                  ),
                 if (!item.isDeleted && item.reactions.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Wrap(
@@ -1275,26 +1297,7 @@ class _MessageBubble extends StatelessWidget {
                         ),
                     ],
                   ),
-                ],
-                if (item.isEdited)
-                  Text(
-                    'Edited',
-                    key: Key('editedLabel-${item.localKey}'),
-                    style: theme.textTheme.labelSmall,
-                  ),
-                const SizedBox(height: 4),
-                if (item.isMine && !item.isDeleted)
-                  Text(
-                    _statusLabel(item.status),
-                    key: Key('receiptStatus-${item.localKey}'),
-                    style: theme.textTheme.labelSmall,
-                  ),
-                if (item.status == ConversationItemStatus.failed)
-                  TextButton(
-                    key: Key('retryMessage-${item.localKey}'),
-                    onPressed: onRetry,
-                    child: const Text('Retry'),
-                  ),
+                ],  
               ],
             ),
           ),
@@ -1348,7 +1351,10 @@ class _MessageBubble extends StatelessWidget {
                           },
                           icon: Text(
                             emoji,
-                            style: const TextStyle(fontSize: 22),
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontFamily: _reactionEmojiFontFamily,
+                            ),
                           ),
                         ),
                     ],
@@ -1393,6 +1399,16 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
+/// Bundled Noto Emoji, used only where the iOS text renderer has no emoji font.
+///
+/// Web keeps the platform emoji font so Chrome rendering stays unchanged.
+String? get _reactionEmojiFontFamily {
+  if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
+    return null;
+  }
+  return 'Noto Emoji';
+}
+
 class _ReactionChip extends StatelessWidget {
   const _ReactionChip({
     required this.localKey,
@@ -1435,6 +1451,7 @@ class _ReactionChip extends StatelessWidget {
           child: Text(
             label,
             key: Key('reactionLabel-$localKey-${reaction.emoji}'),
+            style: TextStyle(fontFamily: _reactionEmojiFontFamily),
           ),
         ),
       ),
