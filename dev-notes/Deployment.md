@@ -1,6 +1,12 @@
 
 The web app will be deployed on Github Pages. 
 
+The deployed web app is found here:
+```
+https://topijun.github.io/web-messenger/
+```
+
+
 The deployment will look like this:
 
 ```

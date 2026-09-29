@@ -1221,83 +1221,89 @@ class _MessageBubble extends StatelessWidget {
           color: color,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-            child: Column(
-              crossAxisAlignment: item.isMine
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                if (!item.isMine && item.senderUsername != null && showAvatar)
-                  Text(item.senderUsername!, style: theme.textTheme.labelSmall),
-                if (item.isDeleted)
-                  Text(
-                    'Message deleted',
-                    key: Key('deletedMessage-${item.localKey}'),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontStyle: FontStyle.italic,
-                    ),
-                  )
-                else if (item.isMedia)
-                  _MediaBody(item: item, controller: controller)
-                else if (item.isAudio && audioPlayback != null)
-                  _AudioBody(
-                    item: item,
-                    controller: controller,
-                    playback: audioPlayback,
-                  )
-                else if (item.isPoll && item.poll != null)
-                  _PollBody(
-                    poll: item.poll!,
-                    enabled: !controller.isVoting(item.poll!.id),
-                    onSelect: (optionId) {
-                      controller.voteOnPoll(
-                        pollId: item.poll!.id,
-                        optionId: optionId,
-                      );
-                    },
-                  )
-                else
-                  Text(item.text, key: Key('messageText-${item.localKey}')),
-                
-                if (item.isEdited)
-                  Text(
-                    'Edited',
-                    key: Key('editedLabel-${item.localKey}'),
-                    style: theme.textTheme.labelSmall,
-                  ),
-                const SizedBox(height: 4),
-                if (item.isMine && !item.isDeleted)
-                  Text(
-                    _statusLabel(item.status),
-                    key: Key('receiptStatus-${item.localKey}'),
-                    style: theme.textTheme.labelSmall,
-                  ),
-                if (item.status == ConversationItemStatus.failed)
-                  TextButton(
-                    key: Key('retryMessage-${item.localKey}'),
-                    onPressed: onRetry,
-                    child: const Text('Retry'),
-                  ),
-                if (!item.isDeleted && item.reactions.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Wrap(
-                    key: Key('messageReactions-${item.localKey}'),
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      for (final reaction in item.reactions)
-                        _ReactionChip(
-                          localKey: item.localKey,
-                          reaction: reaction,
-                          onTap: item.serverId == null
-                              ? null
-                              : () => controller.react(
-                                  messageId: item.serverId!,
-                                  emoji: reaction.emoji,
-                                ),
+                Column(
+                  crossAxisAlignment: item.isMine
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
+                  children: [
+                    if (!item.isMine && item.senderUsername != null && showAvatar)
+                      Text(item.senderUsername!, style: theme.textTheme.labelSmall),
+                    if (item.isDeleted)
+                      Text(
+                        'Message deleted',
+                        key: Key('deletedMessage-${item.localKey}'),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontStyle: FontStyle.italic,
                         ),
-                    ],
+                      )
+                    else if (item.isMedia)
+                      _MediaBody(item: item, controller: controller)
+                    else if (item.isAudio && audioPlayback != null)
+                      _AudioBody(
+                        item: item,
+                        controller: controller,
+                        playback: audioPlayback,
+                      )
+                    else if (item.isPoll && item.poll != null)
+                      _PollBody(
+                        poll: item.poll!,
+                        enabled: !controller.isVoting(item.poll!.id),
+                        onSelect: (optionId) {
+                          controller.voteOnPoll(
+                            pollId: item.poll!.id,
+                            optionId: optionId,
+                          );
+                        },
+                      )
+                    else
+                      Text(item.text, key: Key('messageText-${item.localKey}')),
+                    if (item.isEdited)
+                      Text(
+                        'Edited',
+                        key: Key('editedLabel-${item.localKey}'),
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    const SizedBox(height: 4),
+                    if (item.isMine && !item.isDeleted)
+                      Text(
+                        _statusLabel(item.status),
+                        key: Key('receiptStatus-${item.localKey}'),
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    if (item.status == ConversationItemStatus.failed)
+                      TextButton(
+                        key: Key('retryMessage-${item.localKey}'),
+                        onPressed: onRetry,
+                        child: const Text('Retry'),
+                      ),
+                  ],
+                ),
+                if (!item.isDeleted && item.reactions.isNotEmpty)
+                  Positioned(
+                    right: 0,
+                    bottom: -14,
+                    child: Wrap(
+                      key: Key('messageReactions-${item.localKey}'),
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        for (final reaction in item.reactions)
+                          _ReactionChip(
+                            localKey: item.localKey,
+                            reaction: reaction,
+                            onTap: item.serverId == null
+                                ? null
+                                : () => controller.react(
+                                    messageId: item.serverId!,
+                                    emoji: reaction.emoji,
+                                  ),
+                          ),
+                      ],
+                    ),
                   ),
-                ],  
               ],
             ),
           ),
