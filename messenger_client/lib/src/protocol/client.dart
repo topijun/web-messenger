@@ -640,6 +640,20 @@ class EndpointMessage extends _i2.EndpointRef {
         'deleteMessage',
         {'messageId': messageId},
       );
+
+  /// Adds [emoji] on [messageId], or removes it when the caller already
+  /// reacted with that emoji.
+  _i3.Future<_i12.MessageView> react({
+    required int messageId,
+    required String emoji,
+  }) => caller.callServerEndpoint<_i12.MessageView>(
+    'message',
+    'react',
+    {
+      'messageId': messageId,
+      'emoji': emoji,
+    },
+  );
 }
 
 /// Authenticated access to the current user's [Profile].

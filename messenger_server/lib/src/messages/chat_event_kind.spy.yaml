@@ -9,3 +9,4 @@ values:
   - messageDeleted
   - invitation
   - pollUpdated
+  - messageReactionUpdated

@@ -1,0 +1,19 @@
+### One user's emoji on a message.
+###
+### One row per (message, user, emoji). Counts are derived from these rows.
+### The emoji is metadata, not message text, and is not encrypted.
+class: MessageReaction
+table: messenger_message_reaction
+
+fields:
+  message: Message?, relation(onDelete=Cascade)
+  user: MessengerUser?, relation(onDelete=Cascade)
+  emoji: String
+  createdAt: DateTime
+
+indexes:
+  messenger_message_reaction_unique_idx:
+    fields: messageId, userId, emoji
+    unique: true
+  messenger_message_reaction_message_idx:
+    fields: messageId

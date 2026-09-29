@@ -655,8 +655,11 @@ void main() {
 
     await tester.longPress(find.byKey(const Key('messageBubble-s-1')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('reactionChoice-❤️')), findsOneWidget);
     expect(find.byKey(const Key('editMessageAction')), findsNothing);
     expect(find.byKey(const Key('deleteMessageAction')), findsNothing);
+    Navigator.pop(tester.element(find.byKey(const Key('reactionChoice-❤️'))));
+    await tester.pumpAndSettle();
 
     await tester.longPress(find.byKey(const Key('messageBubble-s-2')));
     await tester.pumpAndSettle();
@@ -1300,8 +1303,11 @@ void main() {
 
     await tester.longPress(find.byKey(const Key('messageBubble-s-1')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('reactionChoice-❤️')), findsOneWidget);
     expect(find.byKey(const Key('editMessageAction')), findsNothing);
     expect(find.byKey(const Key('deleteMessageAction')), findsNothing);
+    Navigator.pop(tester.element(find.byKey(const Key('reactionChoice-❤️'))));
+    await tester.pumpAndSettle();
 
     await tester.longPress(find.byKey(const Key('messageBubble-s-2')));
     await tester.pumpAndSettle();

@@ -21,7 +21,8 @@ enum ChatEventKind implements _i1.SerializableModel {
   messageEdited,
   messageDeleted,
   invitation,
-  pollUpdated;
+  pollUpdated,
+  messageReactionUpdated;
 
   static ChatEventKind fromJson(String name) {
     switch (name) {
@@ -41,6 +42,8 @@ enum ChatEventKind implements _i1.SerializableModel {
         return ChatEventKind.invitation;
       case 'pollUpdated':
         return ChatEventKind.pollUpdated;
+      case 'messageReactionUpdated':
+        return ChatEventKind.messageReactionUpdated;
       default:
         throw ArgumentError(
           'Value "$name" cannot be converted to "ChatEventKind"',

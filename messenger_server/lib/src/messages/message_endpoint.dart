@@ -183,4 +183,14 @@ class MessageEndpoint extends Endpoint {
   }) {
     return _messages.deleteMessage(session, messageId: messageId);
   }
+
+  /// Adds [emoji] on [messageId], or removes it when the caller already
+  /// reacted with that emoji.
+  Future<MessageView> react(
+    Session session, {
+    required int messageId,
+    required String emoji,
+  }) {
+    return _messages.react(session, messageId: messageId, emoji: emoji);
+  }
 }

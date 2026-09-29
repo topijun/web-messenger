@@ -11,3 +11,6 @@ fields:
   ### Decrypted poll. Null unless [Message.type] is poll and the message
   ### has not been deleted.
   poll: PollView?
+  ### Emoji totals for this message. Empty when there are no reactions or
+  ### the message is deleted.
+  reactions: List<MessageReactionView>?

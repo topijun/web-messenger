@@ -78,6 +78,7 @@ class ConversationItem {
     this.editedAt,
     this.deletedAt,
     this.poll,
+    this.reactions = const [],
   });
 
   final String localKey;
@@ -98,6 +99,10 @@ class ConversationItem {
   final DateTime? editedAt;
   final DateTime? deletedAt;
   final PollView? poll;
+  final List<MessageReactionView> reactions;
+
+  /// Emoji offered by the reaction chooser. The server accepts this set.
+  static const reactionEmojis = ['❤️', '👍', '😂', '😮', '😢', '😡'];
 
   /// Whether this row is an image or video message.
   bool get isMedia => type == MessageType.image || type == MessageType.video;
@@ -131,6 +136,13 @@ class ConversationItem {
       status != ConversationItemStatus.sending &&
       status != ConversationItemStatus.failed;
 
+  /// Persisted, visible message that can take an emoji reaction.
+  bool get canReact =>
+      !isDeleted &&
+      serverId != null &&
+      status != ConversationItemStatus.sending &&
+      status != ConversationItemStatus.failed;
+
   /// Builds an item from a server [MessageView].
   ///
   /// Phase 6 reads [Message.encryptedText] as plaintext.
@@ -151,6 +163,9 @@ class ConversationItem {
       editedAt: view.message.editedAt,
       deletedAt: view.message.deletedAt,
       poll: view.message.deletedAt == null ? view.poll : null,
+      reactions: view.message.deletedAt == null
+          ? (view.reactions ?? const [])
+          : const [],
     );
   }
 
@@ -173,6 +188,7 @@ class ConversationItem {
     DateTime? editedAt,
     DateTime? deletedAt,
     PollView? poll,
+    List<MessageReactionView>? reactions,
   }) {
     return ConversationItem(
       localKey: localKey ?? this.localKey,
@@ -193,6 +209,7 @@ class ConversationItem {
       editedAt: editedAt ?? this.editedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       poll: poll ?? this.poll,
+      reactions: reactions ?? this.reactions,
     );
   }
 
@@ -297,6 +314,7 @@ class ConversationController extends ChangeNotifier {
   String? _searchError;
   int? _focusedMessageId;
   final Set<int> _votingPollIds = {};
+  final Set<String> _reacting = {};
 
   ConversationStatus get status => _status;
   List<ConversationItem> get items => List.unmodifiable(_items);
@@ -511,6 +529,27 @@ class ConversationController extends ChangeNotifier {
       _errorMessage = MessageErrorMapper.map(error);
     } finally {
       _votingPollIds.remove(pollId);
+      notifyListeners();
+    }
+  }
+
+  /// Adds [emoji] on [messageId], or removes it when it is already selected.
+  Future<void> react({required int messageId, required String emoji}) async {
+    final key = '$messageId:$emoji';
+    if (_reacting.contains(key)) {
+      return;
+    }
+    _reacting.add(key);
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final view = await _repository.react(messageId: messageId, emoji: emoji);
+      _upsertView(view);
+      _sort();
+    } catch (error) {
+      _errorMessage = MessageErrorMapper.map(error);
+    } finally {
+      _reacting.remove(key);
       notifyListeners();
     }
   }
@@ -1101,7 +1140,8 @@ class ConversationController extends ChangeNotifier {
     return kind == ChatEventKind.message ||
         kind == ChatEventKind.messageEdited ||
         kind == ChatEventKind.messageDeleted ||
-        kind == ChatEventKind.pollUpdated;
+        kind == ChatEventKind.pollUpdated ||
+        kind == ChatEventKind.messageReactionUpdated;
   }
 
   Future<void> _emitTyping(bool isTyping) async {

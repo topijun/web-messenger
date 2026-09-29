@@ -42,6 +42,7 @@ message:
   - setTyping:
   - editText:
   - deleteMessage:
+  - react:
 profile:
   - getMine:
   - updateMine:

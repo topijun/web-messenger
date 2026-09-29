@@ -1213,9 +1213,8 @@ class _MessageBubble extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 280),
       child: GestureDetector(
         key: Key('messageBubble-${item.localKey}'),
-        onLongPress: onEdit == null && onDelete == null
-            ? null
-            : () => _showActions(context),
+        onLongPress: _canOpenActions ? () => _showActions(context) : null,
+        onSecondaryTap: _canOpenActions ? () => _showActions(context) : null,
         child: Card(
           color: color,
           child: Padding(
@@ -1256,6 +1255,27 @@ class _MessageBubble extends StatelessWidget {
                   )
                 else
                   Text(item.text, key: Key('messageText-${item.localKey}')),
+                if (!item.isDeleted && item.reactions.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Wrap(
+                    key: Key('messageReactions-${item.localKey}'),
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      for (final reaction in item.reactions)
+                        _ReactionChip(
+                          localKey: item.localKey,
+                          reaction: reaction,
+                          onTap: item.serverId == null
+                              ? null
+                              : () => controller.react(
+                                  messageId: item.serverId!,
+                                  emoji: reaction.emoji,
+                                ),
+                        ),
+                    ],
+                  ),
+                ],
                 if (item.isEdited)
                   Text(
                     'Edited',
@@ -1296,7 +1316,11 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
+  bool get _canOpenActions =>
+      item.canReact || onEdit != null || onDelete != null;
+
   Future<void> _showActions(BuildContext context) async {
+    final messageId = item.serverId;
     await showModalBottomSheet<void>(
       context: context,
       builder: (context) {
@@ -1304,6 +1328,32 @@ class _MessageBubble extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (item.canReact && messageId != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 4,
+                    children: [
+                      for (final emoji in ConversationItem.reactionEmojis)
+                        IconButton(
+                          key: Key('reactionChoice-$emoji'),
+                          tooltip: emoji,
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            controller.react(
+                              messageId: messageId,
+                              emoji: emoji,
+                            );
+                          },
+                          icon: Text(
+                            emoji,
+                            style: const TextStyle(fontSize: 22),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               if (onEdit != null)
                 ListTile(
                   key: const Key('editMessageAction'),
@@ -1340,6 +1390,55 @@ class _MessageBubble extends StatelessWidget {
       ConversationItemStatus.failed => 'Failed',
       ConversationItemStatus.received => '',
     };
+  }
+}
+
+class _ReactionChip extends StatelessWidget {
+  const _ReactionChip({
+    required this.localKey,
+    required this.reaction,
+    required this.onTap,
+  });
+
+  final String localKey;
+  final MessageReactionView reaction;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final label = reaction.count <= 1
+        ? reaction.emoji
+        : '${reaction.emoji} ${reaction.count}';
+    return Material(
+      key: Key(
+        reaction.mine
+            ? 'reactionMine-$localKey-${reaction.emoji}'
+            : 'reaction-$localKey-${reaction.emoji}',
+      ),
+      color: reaction.mine
+          ? theme.colorScheme.primary.withValues(alpha: 0.16)
+          : theme.colorScheme.surface.withValues(alpha: 0.65),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: reaction.mine
+              ? theme.colorScheme.primary
+              : theme.colorScheme.outlineVariant,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          child: Text(
+            label,
+            key: Key('reactionLabel-$localKey-${reaction.emoji}'),
+          ),
+        ),
+      ),
+    );
   }
 }
 

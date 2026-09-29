@@ -1,0 +1,7 @@
+### Aggregated emoji reactions for one message, as seen by the caller.
+class: MessageReactionView
+fields:
+  emoji: String
+  count: int
+  ### True when the caller has this emoji on the message.
+  mine: bool

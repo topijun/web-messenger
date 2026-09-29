@@ -1526,6 +1526,41 @@ class _MessageEndpoint {
       }
     });
   }
+
+  _i3.Future<_i12.MessageView> react(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int messageId,
+    required String emoji,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'message',
+            method: 'react',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'message',
+          methodName: 'react',
+          parameters: _i1.testObjectToJson({
+            'messageId': messageId,
+            'emoji': emoji,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i12.MessageView>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
 }
 
 class _ProfileEndpoint {

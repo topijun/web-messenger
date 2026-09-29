@@ -297,6 +297,71 @@ void main() {
     messages.dispose();
   });
 
+  testWidgets('a reaction in one wide conversation leaves the other intact', (
+    tester,
+  ) async {
+    final messages = FakeMessageRepository(
+      history: [
+        testMessageView(id: 11, chatId: 1, text: 'Hello from Bob'),
+        testMessageView(id: 22, chatId: 2, text: 'Hello from Carol'),
+      ],
+    );
+    final controller = await _pumpWide(
+      tester,
+      messages: messages,
+      chats: [
+        testDirectChat(id: 1, otherUsername: 'Bob'),
+        testDirectChat(id: 2, otherUsername: 'Carol'),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('chatListItem-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    await tester.pumpAndSettle();
+    final carolState = tester.state(
+      find.byKey(const ValueKey('conversation-2')),
+    );
+    final carolComposer = find.descendant(
+      of: find.byKey(const ValueKey('conversation-2')),
+      matching: find.byKey(const Key('messageComposer')),
+    );
+    await tester.enterText(carolComposer, 'Still drafting');
+    await tester.pump();
+
+    await tester.longPress(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-1')),
+        matching: find.byKey(const Key('messageBubble-s-11')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('reactionChoice-❤️')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-1')),
+        matching: find.text('❤️'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Hello from Carol'), findsOneWidget);
+    expect(find.text('❤️ 2'), findsNothing);
+    expect(
+      tester.widget<TextField>(carolComposer).controller?.text,
+      'Still drafting',
+    );
+    expect(
+      tester.state(find.byKey(const ValueKey('conversation-2'))),
+      same(carolState),
+    );
+    expect(messages.reactCalls, [(messageId: 11, emoji: '❤️')]);
+
+    controller.dispose();
+    messages.dispose();
+  });
+
   testWidgets('a third wide chat replaces the least recently selected panel', (
     tester,
   ) async {

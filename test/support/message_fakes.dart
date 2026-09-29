@@ -20,6 +20,7 @@ MessageView testMessageView({
   int? mediaId,
   int? thumbnailMediaId,
   PollView? poll,
+  List<MessageReactionView>? reactions,
 }) {
   return MessageView(
     message: Message(
@@ -40,6 +41,7 @@ MessageView testMessageView({
     receipts: receipts ?? const [],
     thumbnailMediaId: thumbnailMediaId,
     poll: deletedAt == null ? poll : null,
+    reactions: deletedAt == null ? reactions : const [],
   );
 }
 
@@ -110,8 +112,10 @@ class FakeMessageRepository implements MessageRepository {
   final deletedIds = <int>[];
   final searchQueries = <({int chatId, String query})>[];
   final createdPolls = <({int chatId, String question, bool anonymous})>[];
+  final reactCalls = <({int messageId, String emoji})>[];
   Object? searchError;
   Object? pollError;
+  Object? reactionError;
   int listHistoryCalls = 0;
   int watchCalls = 0;
   Object? typingError;
@@ -370,6 +374,8 @@ class FakeMessageRepository implements MessageRepository {
       isMine: previous.isMine,
       receipts: previous.receipts,
       thumbnailMediaId: previous.thumbnailMediaId,
+      poll: previous.poll,
+      reactions: previous.reactions,
     );
     history[index] = updated;
     return updated;
@@ -396,6 +402,7 @@ class FakeMessageRepository implements MessageRepository {
       isMine: previous.isMine,
       receipts: previous.receipts,
       thumbnailMediaId: previous.thumbnailMediaId,
+      reactions: const [],
     );
     history[index] = updated;
     return updated;
@@ -504,6 +511,71 @@ class FakeMessageRepository implements MessageRepository {
         totalVotes: total,
         options: options,
       ),
+      reactions: previous.reactions,
+    );
+    history[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<MessageView> react({
+    required int messageId,
+    required String emoji,
+  }) async {
+    reactCalls.add((messageId: messageId, emoji: emoji));
+    if (reactionError != null) {
+      throw reactionError!;
+    }
+    final value = emoji.trim();
+    const allowed = {'❤️', '👍', '😂', '😮', '😢', '😡'};
+    if (!allowed.contains(value)) {
+      throw MessengerInvalidChatInputException(
+        field: 'emoji',
+        message: 'Choose one of the available reactions.',
+      );
+    }
+    final index = history.indexWhere((view) => view.message.id == messageId);
+    if (index < 0) {
+      throw MessengerMessageNotFoundException(messageId: messageId);
+    }
+    final previous = history[index];
+    if (previous.message.deletedAt != null) {
+      throw MessengerInvalidChatInputException(
+        field: 'deletedAt',
+        message: 'Deleted messages cannot be reacted to.',
+      );
+    }
+    final current = <MessageReactionView>[...?previous.reactions];
+    final existing = current.indexWhere((reaction) => reaction.emoji == value);
+    if (existing >= 0 && current[existing].mine) {
+      final nextCount = current[existing].count - 1;
+      if (nextCount <= 0) {
+        current.removeAt(existing);
+      } else {
+        current[existing] = MessageReactionView(
+          emoji: value,
+          count: nextCount,
+          mine: false,
+        );
+      }
+    } else if (existing >= 0) {
+      current[existing] = MessageReactionView(
+        emoji: value,
+        count: current[existing].count + 1,
+        mine: true,
+      );
+    } else {
+      current.add(MessageReactionView(emoji: value, count: 1, mine: true));
+    }
+    final updated = MessageView(
+      message: previous.message,
+      senderUsername: previous.senderUsername,
+      senderProfileImageId: previous.senderProfileImageId,
+      isMine: previous.isMine,
+      receipts: previous.receipts,
+      thumbnailMediaId: previous.thumbnailMediaId,
+      poll: previous.poll,
+      reactions: current,
     );
     history[index] = updated;
     return updated;

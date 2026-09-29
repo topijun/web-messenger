@@ -36,6 +36,9 @@ class Messages {
   /// Maximum options on a poll.
   static const maxPollOptions = 6;
 
+  /// Emoji the reaction chooser offers. Anything else is rejected.
+  static const reactionEmojis = ['❤️', '👍', '😂', '😮', '😢', '😡'];
+
   /// Maximum original chat image/video size (20 MiB), before encryption.
   static const maxChatMediaBytes = 20 * 1024 * 1024;
 
@@ -228,6 +231,89 @@ class Messages {
       session,
       vote.copyWith(optionId: optionId),
       transaction: transaction,
+    );
+  }
+
+  /// Adds [emoji] for the caller, or removes it when it is already selected.
+  ///
+  /// One user may keep several emoji on the same message. The same emoji
+  /// toggles off. Deleted messages are rejected.
+  Future<MessageView> react(
+    Session session, {
+    required int messageId,
+    required String emoji,
+  }) async {
+    final value = _validatedEmoji(emoji);
+    final me = await CurrentMessengerUser.require(session);
+    final message = await Message.db.findById(session, messageId);
+    if (message == null) {
+      throw MessengerMessageNotFoundException(messageId: messageId);
+    }
+    if (message.deletedAt != null) {
+      throw MessengerInvalidChatInputException(
+        field: 'deletedAt',
+        message: 'Deleted messages cannot be reacted to.',
+      );
+    }
+    final memberships = await _requireMemberships(
+      session,
+      chatId: message.chatId,
+      userId: me.id!,
+    );
+
+    await DatabaseUtil.runInTransactionOrSavepoint(
+      session.db,
+      null,
+      (transaction) async {
+        final existing = await MessageReaction.db.findFirstRow(
+          session,
+          where: (t) =>
+              t.messageId.equals(messageId) &
+              t.userId.equals(me.id!) &
+              t.emoji.equals(value),
+          transaction: transaction,
+        );
+        if (existing != null) {
+          await MessageReaction.db.deleteRow(
+            session,
+            existing,
+            transaction: transaction,
+          );
+          return;
+        }
+        try {
+          await MessageReaction.db.insertRow(
+            session,
+            MessageReaction(
+              messageId: messageId,
+              userId: me.id!,
+              emoji: value,
+              createdAt: DateTime.now().toUtc(),
+            ),
+            transaction: transaction,
+          );
+        } catch (_) {
+          final raced = await MessageReaction.db.findFirstRow(
+            session,
+            where: (t) =>
+                t.messageId.equals(messageId) &
+                t.userId.equals(me.id!) &
+                t.emoji.equals(value),
+            transaction: transaction,
+          );
+          if (raced == null) {
+            rethrow;
+          }
+        }
+      },
+    );
+
+    return _publishMessageView(
+      session,
+      me: me,
+      stored: message,
+      memberships: memberships,
+      kind: ChatEventKind.messageReactionUpdated,
     );
   }
 
@@ -874,6 +960,11 @@ class Messages {
       messages: messages,
       transaction: transaction,
     );
+    final reactionsByMessageId = await _reactionRowsByMessageId(
+      session,
+      messages: messages,
+      transaction: transaction,
+    );
 
     return [
       for (final message in messages)
@@ -889,6 +980,12 @@ class Messages {
           poll: message.deletedAt == null && message.pollId != null
               ? pollsById[message.pollId!]
               : null,
+          reactions: message.deletedAt == null
+              ? _reactionViews(
+                  reactionsByMessageId[message.id] ?? const [],
+                  me.id!,
+                )
+              : const [],
         ),
     ];
   }
@@ -1349,12 +1446,77 @@ class Messages {
     }
   }
 
+  Future<Map<int, List<MessageReaction>>> _reactionRowsByMessageId(
+    Session session, {
+    required List<Message> messages,
+    Transaction? transaction,
+  }) async {
+    final ids = {
+      for (final message in messages)
+        if (message.deletedAt == null && message.id != null) message.id!,
+    };
+    if (ids.isEmpty) {
+      return const {};
+    }
+    final rows = await MessageReaction.db.find(
+      session,
+      where: (t) => t.messageId.inSet(ids),
+      transaction: transaction,
+    );
+    final grouped = <int, List<MessageReaction>>{};
+    for (final row in rows) {
+      grouped.putIfAbsent(row.messageId, () => []).add(row);
+    }
+    return grouped;
+  }
+
+  List<MessageReactionView> _reactionViews(
+    List<MessageReaction> rows,
+    int viewerId,
+  ) {
+    if (rows.isEmpty) {
+      return const [];
+    }
+    return [
+      for (final emoji in reactionEmojis)
+        if (rows.any((row) => row.emoji == emoji))
+          MessageReactionView(
+            emoji: emoji,
+            count: rows.where((row) => row.emoji == emoji).length,
+            mine: rows.any(
+              (row) => row.emoji == emoji && row.userId == viewerId,
+            ),
+          ),
+    ];
+  }
+
+  String _validatedEmoji(String emoji) {
+    final value = emoji.trim();
+    if (!reactionEmojis.contains(value)) {
+      throw MessengerInvalidChatInputException(
+        field: 'emoji',
+        message: 'Choose one of the available reactions.',
+      );
+    }
+    return value;
+  }
+
   Future<void> _publish(
     Session session,
     ChatEvent event, {
     required Iterable<int> userIds,
     MessageView? senderView,
   }) async {
+    final messageId = senderView?.message.id;
+    final reactionRows =
+        senderView == null ||
+            messageId == null ||
+            senderView.message.deletedAt != null
+        ? const <MessageReaction>[]
+        : await MessageReaction.db.find(
+            session,
+            where: (t) => t.messageId.equals(messageId),
+          );
     for (final userId in userIds.toSet()) {
       final payload = senderView == null
           ? event
@@ -1369,6 +1531,9 @@ class Messages {
                 receipts: senderView.receipts,
                 thumbnailMediaId: senderView.thumbnailMediaId,
                 poll: senderView.poll,
+                reactions: senderView.message.deletedAt == null
+                    ? _reactionViews(reactionRows, userId)
+                    : const [],
               ),
               receipt: event.receipt,
               typingUserId: event.typingUserId,

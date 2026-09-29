@@ -52,40 +52,42 @@ import 'messages/chat_event.dart' as _i36;
 import 'messages/chat_event_kind.dart' as _i37;
 import 'messages/message.dart' as _i38;
 import 'messages/message_history_page.dart' as _i39;
-import 'messages/message_receipt.dart' as _i40;
-import 'messages/message_type.dart' as _i41;
-import 'messages/message_view.dart' as _i42;
-import 'messages/messenger_message_not_found_exception.dart' as _i43;
-import 'messages/messenger_not_message_owner_exception.dart' as _i44;
-import 'messages/messenger_not_message_recipient_exception.dart' as _i45;
-import 'messages/messenger_poll_not_found_exception.dart' as _i46;
-import 'messages/poll.dart' as _i47;
-import 'messages/poll_option.dart' as _i48;
-import 'messages/poll_option_view.dart' as _i49;
-import 'messages/poll_view.dart' as _i50;
-import 'messages/poll_vote.dart' as _i51;
-import 'profiles/messenger_invalid_profile_input_exception.dart' as _i52;
-import 'profiles/profile.dart' as _i53;
-import 'users/contact_search_relation.dart' as _i54;
-import 'users/contact_search_result.dart' as _i55;
-import 'users/messenger_account_required_exception.dart' as _i56;
-import 'users/messenger_invalid_registration_input_exception.dart' as _i57;
-import 'users/messenger_invalid_username_exception.dart' as _i58;
-import 'users/messenger_registration_incomplete_exception.dart' as _i59;
-import 'users/messenger_registration_request.dart' as _i60;
-import 'users/messenger_user.dart' as _i61;
-import 'users/messenger_user_already_exists_exception.dart' as _i62;
-import 'users/messenger_user_not_found_exception.dart' as _i63;
-import 'users/messenger_username_taken_exception.dart' as _i64;
-import 'package:messenger_server/src/generated/chats/chat_summary.dart' as _i65;
-import 'package:messenger_server/src/generated/chats/chat_member.dart' as _i66;
+import 'messages/message_reaction.dart' as _i40;
+import 'messages/message_reaction_view.dart' as _i41;
+import 'messages/message_receipt.dart' as _i42;
+import 'messages/message_type.dart' as _i43;
+import 'messages/message_view.dart' as _i44;
+import 'messages/messenger_message_not_found_exception.dart' as _i45;
+import 'messages/messenger_not_message_owner_exception.dart' as _i46;
+import 'messages/messenger_not_message_recipient_exception.dart' as _i47;
+import 'messages/messenger_poll_not_found_exception.dart' as _i48;
+import 'messages/poll.dart' as _i49;
+import 'messages/poll_option.dart' as _i50;
+import 'messages/poll_option_view.dart' as _i51;
+import 'messages/poll_view.dart' as _i52;
+import 'messages/poll_vote.dart' as _i53;
+import 'profiles/messenger_invalid_profile_input_exception.dart' as _i54;
+import 'profiles/profile.dart' as _i55;
+import 'users/contact_search_relation.dart' as _i56;
+import 'users/contact_search_result.dart' as _i57;
+import 'users/messenger_account_required_exception.dart' as _i58;
+import 'users/messenger_invalid_registration_input_exception.dart' as _i59;
+import 'users/messenger_invalid_username_exception.dart' as _i60;
+import 'users/messenger_registration_incomplete_exception.dart' as _i61;
+import 'users/messenger_registration_request.dart' as _i62;
+import 'users/messenger_user.dart' as _i63;
+import 'users/messenger_user_already_exists_exception.dart' as _i64;
+import 'users/messenger_user_not_found_exception.dart' as _i65;
+import 'users/messenger_username_taken_exception.dart' as _i66;
+import 'package:messenger_server/src/generated/chats/chat_summary.dart' as _i67;
+import 'package:messenger_server/src/generated/chats/chat_member.dart' as _i68;
 import 'package:messenger_server/src/generated/chats/chat_invitation_view.dart'
-    as _i67;
-import 'package:messenger_server/src/generated/devices/device.dart' as _i68;
-import 'package:messenger_server/src/generated/messages/message_view.dart'
     as _i69;
+import 'package:messenger_server/src/generated/devices/device.dart' as _i70;
+import 'package:messenger_server/src/generated/messages/message_view.dart'
+    as _i71;
 import 'package:messenger_server/src/generated/messages/message_receipt.dart'
-    as _i70;
+    as _i72;
 export 'chats/chat.dart';
 export 'chats/chat_invitation.dart';
 export 'chats/chat_invitation_status.dart';
@@ -121,6 +123,8 @@ export 'messages/chat_event.dart';
 export 'messages/chat_event_kind.dart';
 export 'messages/message.dart';
 export 'messages/message_history_page.dart';
+export 'messages/message_reaction.dart';
+export 'messages/message_reaction_view.dart';
 export 'messages/message_receipt.dart';
 export 'messages/message_type.dart';
 export 'messages/message_view.dart';
@@ -820,6 +824,118 @@ class Protocol extends _i1.SerializationManagerServer {
             _i2.IndexElementDefinition(
               type: _i2.IndexElementDefinitionType.column,
               definition: 'createdAt',
+            ),
+          ],
+          type: 'btree',
+          isUnique: false,
+          isPrimary: false,
+        ),
+      ],
+      managed: true,
+    ),
+    _i2.TableDefinition(
+      name: 'messenger_message_reaction',
+      dartName: 'MessageReaction',
+      schema: 'public',
+      module: 'messenger',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault:
+              'nextval(\'messenger_message_reaction_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'messageId',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'userId',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+        ),
+        _i2.ColumnDefinition(
+          name: 'emoji',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'createdAt',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+        ),
+      ],
+      foreignKeys: [
+        _i2.ForeignKeyDefinition(
+          constraintName: 'messenger_message_reaction_fk_0',
+          columns: ['messageId'],
+          referenceTable: 'messenger_message',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: _i2.ForeignKeyAction.noAction,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+        _i2.ForeignKeyDefinition(
+          constraintName: 'messenger_message_reaction_fk_1',
+          columns: ['userId'],
+          referenceTable: 'messenger_user',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: _i2.ForeignKeyAction.noAction,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+      ],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'messenger_message_reaction_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        ),
+        _i2.IndexDefinition(
+          indexName: 'messenger_message_reaction_unique_idx',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'messageId',
+            ),
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'userId',
+            ),
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'emoji',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: false,
+        ),
+        _i2.IndexDefinition(
+          indexName: 'messenger_message_reaction_message_idx',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'messageId',
             ),
           ],
           type: 'btree',
@@ -1655,81 +1771,87 @@ class Protocol extends _i1.SerializationManagerServer {
     if (t == _i39.MessageHistoryPage) {
       return _i39.MessageHistoryPage.fromJson(data) as T;
     }
-    if (t == _i40.MessageReceipt) {
-      return _i40.MessageReceipt.fromJson(data) as T;
+    if (t == _i40.MessageReaction) {
+      return _i40.MessageReaction.fromJson(data) as T;
     }
-    if (t == _i41.MessageType) {
-      return _i41.MessageType.fromJson(data) as T;
+    if (t == _i41.MessageReactionView) {
+      return _i41.MessageReactionView.fromJson(data) as T;
     }
-    if (t == _i42.MessageView) {
-      return _i42.MessageView.fromJson(data) as T;
+    if (t == _i42.MessageReceipt) {
+      return _i42.MessageReceipt.fromJson(data) as T;
     }
-    if (t == _i43.MessengerMessageNotFoundException) {
-      return _i43.MessengerMessageNotFoundException.fromJson(data) as T;
+    if (t == _i43.MessageType) {
+      return _i43.MessageType.fromJson(data) as T;
     }
-    if (t == _i44.MessengerNotMessageOwnerException) {
-      return _i44.MessengerNotMessageOwnerException.fromJson(data) as T;
+    if (t == _i44.MessageView) {
+      return _i44.MessageView.fromJson(data) as T;
     }
-    if (t == _i45.MessengerNotMessageRecipientException) {
-      return _i45.MessengerNotMessageRecipientException.fromJson(data) as T;
+    if (t == _i45.MessengerMessageNotFoundException) {
+      return _i45.MessengerMessageNotFoundException.fromJson(data) as T;
     }
-    if (t == _i46.MessengerPollNotFoundException) {
-      return _i46.MessengerPollNotFoundException.fromJson(data) as T;
+    if (t == _i46.MessengerNotMessageOwnerException) {
+      return _i46.MessengerNotMessageOwnerException.fromJson(data) as T;
     }
-    if (t == _i47.Poll) {
-      return _i47.Poll.fromJson(data) as T;
+    if (t == _i47.MessengerNotMessageRecipientException) {
+      return _i47.MessengerNotMessageRecipientException.fromJson(data) as T;
     }
-    if (t == _i48.PollOption) {
-      return _i48.PollOption.fromJson(data) as T;
+    if (t == _i48.MessengerPollNotFoundException) {
+      return _i48.MessengerPollNotFoundException.fromJson(data) as T;
     }
-    if (t == _i49.PollOptionView) {
-      return _i49.PollOptionView.fromJson(data) as T;
+    if (t == _i49.Poll) {
+      return _i49.Poll.fromJson(data) as T;
     }
-    if (t == _i50.PollView) {
-      return _i50.PollView.fromJson(data) as T;
+    if (t == _i50.PollOption) {
+      return _i50.PollOption.fromJson(data) as T;
     }
-    if (t == _i51.PollVote) {
-      return _i51.PollVote.fromJson(data) as T;
+    if (t == _i51.PollOptionView) {
+      return _i51.PollOptionView.fromJson(data) as T;
     }
-    if (t == _i52.MessengerInvalidProfileInputException) {
-      return _i52.MessengerInvalidProfileInputException.fromJson(data) as T;
+    if (t == _i52.PollView) {
+      return _i52.PollView.fromJson(data) as T;
     }
-    if (t == _i53.Profile) {
-      return _i53.Profile.fromJson(data) as T;
+    if (t == _i53.PollVote) {
+      return _i53.PollVote.fromJson(data) as T;
     }
-    if (t == _i54.ContactSearchRelation) {
-      return _i54.ContactSearchRelation.fromJson(data) as T;
+    if (t == _i54.MessengerInvalidProfileInputException) {
+      return _i54.MessengerInvalidProfileInputException.fromJson(data) as T;
     }
-    if (t == _i55.ContactSearchResult) {
-      return _i55.ContactSearchResult.fromJson(data) as T;
+    if (t == _i55.Profile) {
+      return _i55.Profile.fromJson(data) as T;
     }
-    if (t == _i56.MessengerAccountRequiredException) {
-      return _i56.MessengerAccountRequiredException.fromJson(data) as T;
+    if (t == _i56.ContactSearchRelation) {
+      return _i56.ContactSearchRelation.fromJson(data) as T;
     }
-    if (t == _i57.MessengerInvalidRegistrationInputException) {
-      return _i57.MessengerInvalidRegistrationInputException.fromJson(data)
+    if (t == _i57.ContactSearchResult) {
+      return _i57.ContactSearchResult.fromJson(data) as T;
+    }
+    if (t == _i58.MessengerAccountRequiredException) {
+      return _i58.MessengerAccountRequiredException.fromJson(data) as T;
+    }
+    if (t == _i59.MessengerInvalidRegistrationInputException) {
+      return _i59.MessengerInvalidRegistrationInputException.fromJson(data)
           as T;
     }
-    if (t == _i58.MessengerInvalidUsernameException) {
-      return _i58.MessengerInvalidUsernameException.fromJson(data) as T;
+    if (t == _i60.MessengerInvalidUsernameException) {
+      return _i60.MessengerInvalidUsernameException.fromJson(data) as T;
     }
-    if (t == _i59.MessengerRegistrationIncompleteException) {
-      return _i59.MessengerRegistrationIncompleteException.fromJson(data) as T;
+    if (t == _i61.MessengerRegistrationIncompleteException) {
+      return _i61.MessengerRegistrationIncompleteException.fromJson(data) as T;
     }
-    if (t == _i60.MessengerRegistrationRequest) {
-      return _i60.MessengerRegistrationRequest.fromJson(data) as T;
+    if (t == _i62.MessengerRegistrationRequest) {
+      return _i62.MessengerRegistrationRequest.fromJson(data) as T;
     }
-    if (t == _i61.MessengerUser) {
-      return _i61.MessengerUser.fromJson(data) as T;
+    if (t == _i63.MessengerUser) {
+      return _i63.MessengerUser.fromJson(data) as T;
     }
-    if (t == _i62.MessengerUserAlreadyExistsException) {
-      return _i62.MessengerUserAlreadyExistsException.fromJson(data) as T;
+    if (t == _i64.MessengerUserAlreadyExistsException) {
+      return _i64.MessengerUserAlreadyExistsException.fromJson(data) as T;
     }
-    if (t == _i63.MessengerUserNotFoundException) {
-      return _i63.MessengerUserNotFoundException.fromJson(data) as T;
+    if (t == _i65.MessengerUserNotFoundException) {
+      return _i65.MessengerUserNotFoundException.fromJson(data) as T;
     }
-    if (t == _i64.MessengerUsernameTakenException) {
-      return _i64.MessengerUsernameTakenException.fromJson(data) as T;
+    if (t == _i66.MessengerUsernameTakenException) {
+      return _i66.MessengerUsernameTakenException.fromJson(data) as T;
     }
     if (t == _i1.getType<_i5.Chat?>()) {
       return (data != null ? _i5.Chat.fromJson(data) : null) as T;
@@ -1881,119 +2003,126 @@ class Protocol extends _i1.SerializationManagerServer {
       return (data != null ? _i39.MessageHistoryPage.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i40.MessageReceipt?>()) {
-      return (data != null ? _i40.MessageReceipt.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i40.MessageReaction?>()) {
+      return (data != null ? _i40.MessageReaction.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i41.MessageType?>()) {
-      return (data != null ? _i41.MessageType.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i41.MessageReactionView?>()) {
+      return (data != null ? _i41.MessageReactionView.fromJson(data) : null)
+          as T;
     }
-    if (t == _i1.getType<_i42.MessageView?>()) {
-      return (data != null ? _i42.MessageView.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i42.MessageReceipt?>()) {
+      return (data != null ? _i42.MessageReceipt.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i43.MessengerMessageNotFoundException?>()) {
+    if (t == _i1.getType<_i43.MessageType?>()) {
+      return (data != null ? _i43.MessageType.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i44.MessageView?>()) {
+      return (data != null ? _i44.MessageView.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i45.MessengerMessageNotFoundException?>()) {
       return (data != null
-              ? _i43.MessengerMessageNotFoundException.fromJson(data)
+              ? _i45.MessengerMessageNotFoundException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i44.MessengerNotMessageOwnerException?>()) {
+    if (t == _i1.getType<_i46.MessengerNotMessageOwnerException?>()) {
       return (data != null
-              ? _i44.MessengerNotMessageOwnerException.fromJson(data)
+              ? _i46.MessengerNotMessageOwnerException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i45.MessengerNotMessageRecipientException?>()) {
+    if (t == _i1.getType<_i47.MessengerNotMessageRecipientException?>()) {
       return (data != null
-              ? _i45.MessengerNotMessageRecipientException.fromJson(data)
+              ? _i47.MessengerNotMessageRecipientException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i46.MessengerPollNotFoundException?>()) {
+    if (t == _i1.getType<_i48.MessengerPollNotFoundException?>()) {
       return (data != null
-              ? _i46.MessengerPollNotFoundException.fromJson(data)
+              ? _i48.MessengerPollNotFoundException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i47.Poll?>()) {
-      return (data != null ? _i47.Poll.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i49.Poll?>()) {
+      return (data != null ? _i49.Poll.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i48.PollOption?>()) {
-      return (data != null ? _i48.PollOption.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i50.PollOption?>()) {
+      return (data != null ? _i50.PollOption.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i49.PollOptionView?>()) {
-      return (data != null ? _i49.PollOptionView.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i51.PollOptionView?>()) {
+      return (data != null ? _i51.PollOptionView.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i50.PollView?>()) {
-      return (data != null ? _i50.PollView.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i52.PollView?>()) {
+      return (data != null ? _i52.PollView.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i51.PollVote?>()) {
-      return (data != null ? _i51.PollVote.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i53.PollVote?>()) {
+      return (data != null ? _i53.PollVote.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i52.MessengerInvalidProfileInputException?>()) {
+    if (t == _i1.getType<_i54.MessengerInvalidProfileInputException?>()) {
       return (data != null
-              ? _i52.MessengerInvalidProfileInputException.fromJson(data)
+              ? _i54.MessengerInvalidProfileInputException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i53.Profile?>()) {
-      return (data != null ? _i53.Profile.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i55.Profile?>()) {
+      return (data != null ? _i55.Profile.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i54.ContactSearchRelation?>()) {
-      return (data != null ? _i54.ContactSearchRelation.fromJson(data) : null)
+    if (t == _i1.getType<_i56.ContactSearchRelation?>()) {
+      return (data != null ? _i56.ContactSearchRelation.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i55.ContactSearchResult?>()) {
-      return (data != null ? _i55.ContactSearchResult.fromJson(data) : null)
+    if (t == _i1.getType<_i57.ContactSearchResult?>()) {
+      return (data != null ? _i57.ContactSearchResult.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i56.MessengerAccountRequiredException?>()) {
+    if (t == _i1.getType<_i58.MessengerAccountRequiredException?>()) {
       return (data != null
-              ? _i56.MessengerAccountRequiredException.fromJson(data)
+              ? _i58.MessengerAccountRequiredException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i57.MessengerInvalidRegistrationInputException?>()) {
+    if (t == _i1.getType<_i59.MessengerInvalidRegistrationInputException?>()) {
       return (data != null
-              ? _i57.MessengerInvalidRegistrationInputException.fromJson(data)
+              ? _i59.MessengerInvalidRegistrationInputException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i58.MessengerInvalidUsernameException?>()) {
+    if (t == _i1.getType<_i60.MessengerInvalidUsernameException?>()) {
       return (data != null
-              ? _i58.MessengerInvalidUsernameException.fromJson(data)
+              ? _i60.MessengerInvalidUsernameException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i59.MessengerRegistrationIncompleteException?>()) {
+    if (t == _i1.getType<_i61.MessengerRegistrationIncompleteException?>()) {
       return (data != null
-              ? _i59.MessengerRegistrationIncompleteException.fromJson(data)
+              ? _i61.MessengerRegistrationIncompleteException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i60.MessengerRegistrationRequest?>()) {
+    if (t == _i1.getType<_i62.MessengerRegistrationRequest?>()) {
       return (data != null
-              ? _i60.MessengerRegistrationRequest.fromJson(data)
+              ? _i62.MessengerRegistrationRequest.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i61.MessengerUser?>()) {
-      return (data != null ? _i61.MessengerUser.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i63.MessengerUser?>()) {
+      return (data != null ? _i63.MessengerUser.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i62.MessengerUserAlreadyExistsException?>()) {
+    if (t == _i1.getType<_i64.MessengerUserAlreadyExistsException?>()) {
       return (data != null
-              ? _i62.MessengerUserAlreadyExistsException.fromJson(data)
+              ? _i64.MessengerUserAlreadyExistsException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i63.MessengerUserNotFoundException?>()) {
+    if (t == _i1.getType<_i65.MessengerUserNotFoundException?>()) {
       return (data != null
-              ? _i63.MessengerUserNotFoundException.fromJson(data)
+              ? _i65.MessengerUserNotFoundException.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i64.MessengerUsernameTakenException?>()) {
+    if (t == _i1.getType<_i66.MessengerUsernameTakenException?>()) {
       return (data != null
-              ? _i64.MessengerUsernameTakenException.fromJson(data)
+              ? _i66.MessengerUsernameTakenException.fromJson(data)
               : null)
           as T;
     }
@@ -2006,29 +2135,43 @@ class Protocol extends _i1.SerializationManagerServer {
               .toList()
           as T;
     }
-    if (t == List<_i40.MessageReceipt>) {
+    if (t == List<_i42.MessageReceipt>) {
       return (data as List)
-              .map((e) => deserialize<_i40.MessageReceipt>(e))
+              .map((e) => deserialize<_i42.MessageReceipt>(e))
               .toList()
           as T;
     }
-    if (t == _i1.getType<List<_i40.MessageReceipt>?>()) {
+    if (t == _i1.getType<List<_i42.MessageReceipt>?>()) {
       return (data != null
               ? (data as List)
-                    .map((e) => deserialize<_i40.MessageReceipt>(e))
+                    .map((e) => deserialize<_i42.MessageReceipt>(e))
                     .toList()
               : null)
           as T;
     }
-    if (t == List<_i42.MessageView>) {
+    if (t == List<_i44.MessageView>) {
       return (data as List)
-              .map((e) => deserialize<_i42.MessageView>(e))
+              .map((e) => deserialize<_i44.MessageView>(e))
               .toList()
           as T;
     }
-    if (t == List<_i49.PollOptionView>) {
+    if (t == List<_i41.MessageReactionView>) {
       return (data as List)
-              .map((e) => deserialize<_i49.PollOptionView>(e))
+              .map((e) => deserialize<_i41.MessageReactionView>(e))
+              .toList()
+          as T;
+    }
+    if (t == _i1.getType<List<_i41.MessageReactionView>?>()) {
+      return (data != null
+              ? (data as List)
+                    .map((e) => deserialize<_i41.MessageReactionView>(e))
+                    .toList()
+              : null)
+          as T;
+    }
+    if (t == List<_i51.PollOptionView>) {
+      return (data as List)
+              .map((e) => deserialize<_i51.PollOptionView>(e))
               .toList()
           as T;
     }
@@ -2046,38 +2189,38 @@ class Protocol extends _i1.SerializationManagerServer {
               : null)
           as T;
     }
-    if (t == List<_i65.ChatSummary>) {
+    if (t == List<_i67.ChatSummary>) {
       return (data as List)
-              .map((e) => deserialize<_i65.ChatSummary>(e))
+              .map((e) => deserialize<_i67.ChatSummary>(e))
               .toList()
           as T;
     }
-    if (t == List<_i66.ChatMember>) {
-      return (data as List).map((e) => deserialize<_i66.ChatMember>(e)).toList()
+    if (t == List<_i68.ChatMember>) {
+      return (data as List).map((e) => deserialize<_i68.ChatMember>(e)).toList()
           as T;
     }
-    if (t == List<_i67.ChatInvitationView>) {
+    if (t == List<_i69.ChatInvitationView>) {
       return (data as List)
-              .map((e) => deserialize<_i67.ChatInvitationView>(e))
+              .map((e) => deserialize<_i69.ChatInvitationView>(e))
               .toList()
           as T;
     }
-    if (t == List<_i68.Device>) {
-      return (data as List).map((e) => deserialize<_i68.Device>(e)).toList()
+    if (t == List<_i70.Device>) {
+      return (data as List).map((e) => deserialize<_i70.Device>(e)).toList()
           as T;
     }
-    if (t == List<_i69.MessageView>) {
+    if (t == List<_i71.MessageView>) {
       return (data as List)
-              .map((e) => deserialize<_i69.MessageView>(e))
+              .map((e) => deserialize<_i71.MessageView>(e))
               .toList()
           as T;
     }
     if (t == List<String>) {
       return (data as List).map((e) => deserialize<String>(e)).toList() as T;
     }
-    if (t == List<_i70.MessageReceipt>) {
+    if (t == List<_i72.MessageReceipt>) {
       return (data as List)
-              .map((e) => deserialize<_i70.MessageReceipt>(e))
+              .map((e) => deserialize<_i72.MessageReceipt>(e))
               .toList()
           as T;
     }
@@ -2141,40 +2284,42 @@ class Protocol extends _i1.SerializationManagerServer {
       _i37.ChatEventKind => 'ChatEventKind',
       _i38.Message => 'Message',
       _i39.MessageHistoryPage => 'MessageHistoryPage',
-      _i40.MessageReceipt => 'MessageReceipt',
-      _i41.MessageType => 'MessageType',
-      _i42.MessageView => 'MessageView',
-      _i43.MessengerMessageNotFoundException =>
+      _i40.MessageReaction => 'MessageReaction',
+      _i41.MessageReactionView => 'MessageReactionView',
+      _i42.MessageReceipt => 'MessageReceipt',
+      _i43.MessageType => 'MessageType',
+      _i44.MessageView => 'MessageView',
+      _i45.MessengerMessageNotFoundException =>
         'MessengerMessageNotFoundException',
-      _i44.MessengerNotMessageOwnerException =>
+      _i46.MessengerNotMessageOwnerException =>
         'MessengerNotMessageOwnerException',
-      _i45.MessengerNotMessageRecipientException =>
+      _i47.MessengerNotMessageRecipientException =>
         'MessengerNotMessageRecipientException',
-      _i46.MessengerPollNotFoundException => 'MessengerPollNotFoundException',
-      _i47.Poll => 'Poll',
-      _i48.PollOption => 'PollOption',
-      _i49.PollOptionView => 'PollOptionView',
-      _i50.PollView => 'PollView',
-      _i51.PollVote => 'PollVote',
-      _i52.MessengerInvalidProfileInputException =>
+      _i48.MessengerPollNotFoundException => 'MessengerPollNotFoundException',
+      _i49.Poll => 'Poll',
+      _i50.PollOption => 'PollOption',
+      _i51.PollOptionView => 'PollOptionView',
+      _i52.PollView => 'PollView',
+      _i53.PollVote => 'PollVote',
+      _i54.MessengerInvalidProfileInputException =>
         'MessengerInvalidProfileInputException',
-      _i53.Profile => 'Profile',
-      _i54.ContactSearchRelation => 'ContactSearchRelation',
-      _i55.ContactSearchResult => 'ContactSearchResult',
-      _i56.MessengerAccountRequiredException =>
+      _i55.Profile => 'Profile',
+      _i56.ContactSearchRelation => 'ContactSearchRelation',
+      _i57.ContactSearchResult => 'ContactSearchResult',
+      _i58.MessengerAccountRequiredException =>
         'MessengerAccountRequiredException',
-      _i57.MessengerInvalidRegistrationInputException =>
+      _i59.MessengerInvalidRegistrationInputException =>
         'MessengerInvalidRegistrationInputException',
-      _i58.MessengerInvalidUsernameException =>
+      _i60.MessengerInvalidUsernameException =>
         'MessengerInvalidUsernameException',
-      _i59.MessengerRegistrationIncompleteException =>
+      _i61.MessengerRegistrationIncompleteException =>
         'MessengerRegistrationIncompleteException',
-      _i60.MessengerRegistrationRequest => 'MessengerRegistrationRequest',
-      _i61.MessengerUser => 'MessengerUser',
-      _i62.MessengerUserAlreadyExistsException =>
+      _i62.MessengerRegistrationRequest => 'MessengerRegistrationRequest',
+      _i63.MessengerUser => 'MessengerUser',
+      _i64.MessengerUserAlreadyExistsException =>
         'MessengerUserAlreadyExistsException',
-      _i63.MessengerUserNotFoundException => 'MessengerUserNotFoundException',
-      _i64.MessengerUsernameTakenException => 'MessengerUsernameTakenException',
+      _i65.MessengerUserNotFoundException => 'MessengerUserNotFoundException',
+      _i66.MessengerUsernameTakenException => 'MessengerUsernameTakenException',
       _ => null,
     };
   }
@@ -2259,55 +2404,59 @@ class Protocol extends _i1.SerializationManagerServer {
         return 'Message';
       case _i39.MessageHistoryPage():
         return 'MessageHistoryPage';
-      case _i40.MessageReceipt():
+      case _i40.MessageReaction():
+        return 'MessageReaction';
+      case _i41.MessageReactionView():
+        return 'MessageReactionView';
+      case _i42.MessageReceipt():
         return 'MessageReceipt';
-      case _i41.MessageType():
+      case _i43.MessageType():
         return 'MessageType';
-      case _i42.MessageView():
+      case _i44.MessageView():
         return 'MessageView';
-      case _i43.MessengerMessageNotFoundException():
+      case _i45.MessengerMessageNotFoundException():
         return 'MessengerMessageNotFoundException';
-      case _i44.MessengerNotMessageOwnerException():
+      case _i46.MessengerNotMessageOwnerException():
         return 'MessengerNotMessageOwnerException';
-      case _i45.MessengerNotMessageRecipientException():
+      case _i47.MessengerNotMessageRecipientException():
         return 'MessengerNotMessageRecipientException';
-      case _i46.MessengerPollNotFoundException():
+      case _i48.MessengerPollNotFoundException():
         return 'MessengerPollNotFoundException';
-      case _i47.Poll():
+      case _i49.Poll():
         return 'Poll';
-      case _i48.PollOption():
+      case _i50.PollOption():
         return 'PollOption';
-      case _i49.PollOptionView():
+      case _i51.PollOptionView():
         return 'PollOptionView';
-      case _i50.PollView():
+      case _i52.PollView():
         return 'PollView';
-      case _i51.PollVote():
+      case _i53.PollVote():
         return 'PollVote';
-      case _i52.MessengerInvalidProfileInputException():
+      case _i54.MessengerInvalidProfileInputException():
         return 'MessengerInvalidProfileInputException';
-      case _i53.Profile():
+      case _i55.Profile():
         return 'Profile';
-      case _i54.ContactSearchRelation():
+      case _i56.ContactSearchRelation():
         return 'ContactSearchRelation';
-      case _i55.ContactSearchResult():
+      case _i57.ContactSearchResult():
         return 'ContactSearchResult';
-      case _i56.MessengerAccountRequiredException():
+      case _i58.MessengerAccountRequiredException():
         return 'MessengerAccountRequiredException';
-      case _i57.MessengerInvalidRegistrationInputException():
+      case _i59.MessengerInvalidRegistrationInputException():
         return 'MessengerInvalidRegistrationInputException';
-      case _i58.MessengerInvalidUsernameException():
+      case _i60.MessengerInvalidUsernameException():
         return 'MessengerInvalidUsernameException';
-      case _i59.MessengerRegistrationIncompleteException():
+      case _i61.MessengerRegistrationIncompleteException():
         return 'MessengerRegistrationIncompleteException';
-      case _i60.MessengerRegistrationRequest():
+      case _i62.MessengerRegistrationRequest():
         return 'MessengerRegistrationRequest';
-      case _i61.MessengerUser():
+      case _i63.MessengerUser():
         return 'MessengerUser';
-      case _i62.MessengerUserAlreadyExistsException():
+      case _i64.MessengerUserAlreadyExistsException():
         return 'MessengerUserAlreadyExistsException';
-      case _i63.MessengerUserNotFoundException():
+      case _i65.MessengerUserNotFoundException():
         return 'MessengerUserNotFoundException';
-      case _i64.MessengerUsernameTakenException():
+      case _i66.MessengerUsernameTakenException():
         return 'MessengerUsernameTakenException';
     }
     className = _i2.Protocol().getClassNameForObject(data);
@@ -2446,90 +2595,96 @@ class Protocol extends _i1.SerializationManagerServer {
     if (dataClassName == 'MessageHistoryPage') {
       return deserialize<_i39.MessageHistoryPage>(data['data']);
     }
+    if (dataClassName == 'MessageReaction') {
+      return deserialize<_i40.MessageReaction>(data['data']);
+    }
+    if (dataClassName == 'MessageReactionView') {
+      return deserialize<_i41.MessageReactionView>(data['data']);
+    }
     if (dataClassName == 'MessageReceipt') {
-      return deserialize<_i40.MessageReceipt>(data['data']);
+      return deserialize<_i42.MessageReceipt>(data['data']);
     }
     if (dataClassName == 'MessageType') {
-      return deserialize<_i41.MessageType>(data['data']);
+      return deserialize<_i43.MessageType>(data['data']);
     }
     if (dataClassName == 'MessageView') {
-      return deserialize<_i42.MessageView>(data['data']);
+      return deserialize<_i44.MessageView>(data['data']);
     }
     if (dataClassName == 'MessengerMessageNotFoundException') {
-      return deserialize<_i43.MessengerMessageNotFoundException>(data['data']);
+      return deserialize<_i45.MessengerMessageNotFoundException>(data['data']);
     }
     if (dataClassName == 'MessengerNotMessageOwnerException') {
-      return deserialize<_i44.MessengerNotMessageOwnerException>(data['data']);
+      return deserialize<_i46.MessengerNotMessageOwnerException>(data['data']);
     }
     if (dataClassName == 'MessengerNotMessageRecipientException') {
-      return deserialize<_i45.MessengerNotMessageRecipientException>(
+      return deserialize<_i47.MessengerNotMessageRecipientException>(
         data['data'],
       );
     }
     if (dataClassName == 'MessengerPollNotFoundException') {
-      return deserialize<_i46.MessengerPollNotFoundException>(data['data']);
+      return deserialize<_i48.MessengerPollNotFoundException>(data['data']);
     }
     if (dataClassName == 'Poll') {
-      return deserialize<_i47.Poll>(data['data']);
+      return deserialize<_i49.Poll>(data['data']);
     }
     if (dataClassName == 'PollOption') {
-      return deserialize<_i48.PollOption>(data['data']);
+      return deserialize<_i50.PollOption>(data['data']);
     }
     if (dataClassName == 'PollOptionView') {
-      return deserialize<_i49.PollOptionView>(data['data']);
+      return deserialize<_i51.PollOptionView>(data['data']);
     }
     if (dataClassName == 'PollView') {
-      return deserialize<_i50.PollView>(data['data']);
+      return deserialize<_i52.PollView>(data['data']);
     }
     if (dataClassName == 'PollVote') {
-      return deserialize<_i51.PollVote>(data['data']);
+      return deserialize<_i53.PollVote>(data['data']);
     }
     if (dataClassName == 'MessengerInvalidProfileInputException') {
-      return deserialize<_i52.MessengerInvalidProfileInputException>(
+      return deserialize<_i54.MessengerInvalidProfileInputException>(
         data['data'],
       );
     }
     if (dataClassName == 'Profile') {
-      return deserialize<_i53.Profile>(data['data']);
+      return deserialize<_i55.Profile>(data['data']);
     }
     if (dataClassName == 'ContactSearchRelation') {
-      return deserialize<_i54.ContactSearchRelation>(data['data']);
+      return deserialize<_i56.ContactSearchRelation>(data['data']);
     }
     if (dataClassName == 'ContactSearchResult') {
-      return deserialize<_i55.ContactSearchResult>(data['data']);
+      return deserialize<_i57.ContactSearchResult>(data['data']);
     }
     if (dataClassName == 'MessengerAccountRequiredException') {
-      return deserialize<_i56.MessengerAccountRequiredException>(data['data']);
+      return deserialize<_i58.MessengerAccountRequiredException>(data['data']);
     }
     if (dataClassName == 'MessengerInvalidRegistrationInputException') {
-      return deserialize<_i57.MessengerInvalidRegistrationInputException>(
+      return deserialize<_i59.MessengerInvalidRegistrationInputException>(
         data['data'],
       );
     }
     if (dataClassName == 'MessengerInvalidUsernameException') {
-      return deserialize<_i58.MessengerInvalidUsernameException>(data['data']);
+      return deserialize<_i60.MessengerInvalidUsernameException>(data['data']);
     }
     if (dataClassName == 'MessengerRegistrationIncompleteException') {
-      return deserialize<_i59.MessengerRegistrationIncompleteException>(
+      return deserialize<_i61.MessengerRegistrationIncompleteException>(
         data['data'],
       );
     }
     if (dataClassName == 'MessengerRegistrationRequest') {
-      return deserialize<_i60.MessengerRegistrationRequest>(data['data']);
+      return deserialize<_i62.MessengerRegistrationRequest>(data['data']);
     }
     if (dataClassName == 'MessengerUser') {
-      return deserialize<_i61.MessengerUser>(data['data']);
+      return deserialize<_i63.MessengerUser>(data['data']);
     }
     if (dataClassName == 'MessengerUserAlreadyExistsException') {
-      return deserialize<_i62.MessengerUserAlreadyExistsException>(
+      return deserialize<_i64.MessengerUserAlreadyExistsException>(
         data['data'],
       );
     }
     if (dataClassName == 'MessengerUserNotFoundException') {
-      return deserialize<_i63.MessengerUserNotFoundException>(data['data']);
+      return deserialize<_i65.MessengerUserNotFoundException>(data['data']);
     }
     if (dataClassName == 'MessengerUsernameTakenException') {
-      return deserialize<_i64.MessengerUsernameTakenException>(data['data']);
+      return deserialize<_i66.MessengerUsernameTakenException>(data['data']);
     }
     if (dataClassName.startsWith('serverpod.')) {
       data['className'] = dataClassName.substring(10);
@@ -2579,20 +2734,22 @@ class Protocol extends _i1.SerializationManagerServer {
         return _i31.Media.t;
       case _i38.Message:
         return _i38.Message.t;
-      case _i40.MessageReceipt:
-        return _i40.MessageReceipt.t;
-      case _i47.Poll:
-        return _i47.Poll.t;
-      case _i48.PollOption:
-        return _i48.PollOption.t;
-      case _i51.PollVote:
-        return _i51.PollVote.t;
-      case _i53.Profile:
-        return _i53.Profile.t;
-      case _i60.MessengerRegistrationRequest:
-        return _i60.MessengerRegistrationRequest.t;
-      case _i61.MessengerUser:
-        return _i61.MessengerUser.t;
+      case _i40.MessageReaction:
+        return _i40.MessageReaction.t;
+      case _i42.MessageReceipt:
+        return _i42.MessageReceipt.t;
+      case _i49.Poll:
+        return _i49.Poll.t;
+      case _i50.PollOption:
+        return _i50.PollOption.t;
+      case _i53.PollVote:
+        return _i53.PollVote.t;
+      case _i55.Profile:
+        return _i55.Profile.t;
+      case _i62.MessengerRegistrationRequest:
+        return _i62.MessengerRegistrationRequest.t;
+      case _i63.MessengerUser:
+        return _i63.MessengerUser.t;
     }
     return null;
   }

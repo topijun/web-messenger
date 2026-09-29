@@ -71,6 +71,9 @@ abstract class MessageRepository {
 
   /// Selects [optionId]. The same option again retracts the vote.
   Future<MessageView> vote({required int pollId, required int optionId});
+
+  /// Adds [emoji] on [messageId], or removes it when it is already selected.
+  Future<MessageView> react({required int messageId, required String emoji});
 }
 
 /// [MessageRepository] that talks to the generated Serverpod client.
@@ -199,5 +202,10 @@ class ServerpodMessageRepository implements MessageRepository {
   @override
   Future<MessageView> vote({required int pollId, required int optionId}) {
     return _client.message.vote(pollId: pollId, optionId: optionId);
+  }
+
+  @override
+  Future<MessageView> react({required int messageId, required String emoji}) {
+    return _client.message.react(messageId: messageId, emoji: emoji);
   }
 }
