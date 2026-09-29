@@ -30,12 +30,19 @@ class ConversationScreen extends StatefulWidget {
     this.playback,
     this.imagePicker,
     this.poster,
+    this.embedded = false,
   });
 
   final ChatController chatController;
   final ChatSummary summary;
   final MessageRepository messages;
   final int? selfProfileImageId;
+
+  /// When true, this screen fills a pane instead of a pushed route.
+  ///
+  /// The app bar does not show a back button. Chat switching is owned by
+  /// the surrounding layout.
+  final bool embedded;
   final ChatAudioRecorder? recorder;
   final ChatAudioPlayback? playback;
   final ImageLibraryPicker? imagePicker;
@@ -398,6 +405,7 @@ class _ConversationScreenState extends State<ConversationScreen>
     return Scaffold(
       key: const Key('conversationScreen'),
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.embedded,
         title: ChatNavTitle(summary: widget.summary),
         actions: [
           IconButton(

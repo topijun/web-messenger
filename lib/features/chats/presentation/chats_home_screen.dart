@@ -5,11 +5,15 @@ import 'package:messenger_client/messenger_client.dart';
 import 'package:mobile_messenger/core/lifecycle/app_resume_guard.dart';
 import 'package:mobile_messenger/features/auth/presentation/auth_scope.dart';
 import 'package:mobile_messenger/features/chats/application/chat_controller.dart';
+import 'package:mobile_messenger/features/chats/presentation/chat_detail_screen.dart';
 import 'package:mobile_messenger/features/chats/presentation/chat_labels.dart';
 import 'package:mobile_messenger/features/chats/presentation/chat_list_avatar.dart';
 import 'package:mobile_messenger/features/chats/presentation/open_chat.dart';
 import 'package:mobile_messenger/features/chats/presentation/new_direct_chat_screen.dart';
 import 'package:mobile_messenger/features/chats/presentation/new_group_screen.dart';
+import 'package:mobile_messenger/features/home/presentation/messenger_layout.dart';
+import 'package:mobile_messenger/features/messaging/presentation/conversation_screen.dart';
+import 'package:mobile_messenger/features/messaging/presentation/message_scope.dart';
 import 'package:mobile_messenger/features/profile/application/profile_controller.dart';
 import 'package:mobile_messenger/features/profile/presentation/profile_scope.dart';
 import 'package:mobile_messenger/features/profile/presentation/profile_screen.dart';
@@ -45,6 +49,8 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
   late final TabController _tabs;
   Timer? _poll;
   var _appActive = true;
+  var _wide = false;
+  int? _selectedChatId;
 
   @override
   void initState() {
@@ -129,10 +135,37 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
     _poll = null;
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final wide = isMessengerWideLayout(context);
+    if (_wide && !wide) {
+      _selectedChatId = null;
+      widget.controller.setActiveChat(null);
+    }
+    _wide = wide;
+  }
+
   void _onControllerChanged() {
+    if (_selectedChatId != null && _summaryFor(_selectedChatId) == null) {
+      _selectedChatId = null;
+      widget.controller.setActiveChat(null);
+    }
     if (mounted) {
       setState(() {});
     }
+  }
+
+  ChatSummary? _summaryFor(int? chatId) {
+    if (chatId == null) {
+      return null;
+    }
+    for (final summary in widget.controller.chats) {
+      if (summary.chat.id == chatId) {
+        return summary;
+      }
+    }
+    return null;
   }
 
   Future<void> _openProfile() async {
@@ -224,6 +257,14 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
   }
 
   Future<void> _openChat(ChatSummary summary) {
+    if (isMessengerWideLayout(context)) {
+      final chatId = summary.chat.id;
+      setState(() => _selectedChatId = chatId);
+      if (chatId != null) {
+        widget.controller.setActiveChat(chatId);
+      }
+      return Future<void>.value();
+    }
     return openChat(
       context: context,
       controller: widget.controller,
@@ -263,6 +304,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
     final profiles = ProfileScope.maybeOf(context);
     final controller = widget.controller;
 
+    final wide = isMessengerWideLayout(context);
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -311,51 +353,141 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
             child: const Text('Log out'),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabs,
-          tabs: [
-            const Tab(key: Key('chatsTab'), text: 'Chats'),
-            Tab(
-              key: const Key('invitationsTab'),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Invitations'),
-                  if (controller.pendingInvitationCount > 0) ...[
-                    const SizedBox(width: 8),
-                    _CountBadge(
-                      key: const Key('invitationBadge'),
-                      count: controller.pendingInvitationCount,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
+        bottom: wide ? null : _homeTabs(controller),
+      ),
+      floatingActionButton: wide ? null : _newChatButton(),
+      body: wide ? _wideBody(controller) : _homePages(controller),
+    );
+  }
+
+  TabBar _homeTabs(ChatController controller, {bool scrollable = false}) {
+    return TabBar(
+      controller: _tabs,
+      isScrollable: scrollable,
+      tabAlignment: scrollable ? TabAlignment.start : TabAlignment.fill,
+      tabs: [
+        const Tab(key: Key('chatsTab'), text: 'Chats'),
+        Tab(
+          key: const Key('invitationsTab'),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Invitations'),
+              if (controller.pendingInvitationCount > 0) ...[
+                const SizedBox(width: 8),
+                _CountBadge(
+                  key: const Key('invitationBadge'),
+                  count: controller.pendingInvitationCount,
+                ),
+              ],
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('newChat'),
-        tooltip: 'New chat',
-        onPressed: _openNewChatMenu,
-        child: const Icon(Icons.add),
-      ),
-      body: TabBarView(
-        controller: _tabs,
-        children: [
-          _ChatListBody(
-            controller: controller,
-            onOpenChat: _openChat,
-            onRefresh: controller.load,
+      ],
+    );
+  }
+
+  Widget _newChatButton() {
+    return FloatingActionButton(
+      key: const Key('newChat'),
+      tooltip: 'New chat',
+      onPressed: _openNewChatMenu,
+      child: const Icon(Icons.add),
+    );
+  }
+
+  Widget _homePages(ChatController controller, {int? selectedChatId}) {
+    return TabBarView(
+      controller: _tabs,
+      children: [
+        _ChatListBody(
+          controller: controller,
+          onOpenChat: _openChat,
+          onRefresh: controller.load,
+          selectedChatId: selectedChatId,
+        ),
+        _InvitationListBody(
+          controller: controller,
+          onAccept: _accept,
+          onDecline: _decline,
+          onRefresh: controller.load,
+        ),
+      ],
+    );
+  }
+
+  Widget _wideBody(ChatController controller) {
+    final selected = _summaryFor(_selectedChatId);
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      key: const Key('messengerWideLayout'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          key: const Key('chatListPane'),
+          width: messengerChatListPaneWidth,
+          child: Material(
+            color: scheme.surface,
+            child: Column(
+              children: [
+                _homeTabs(controller, scrollable: true),
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _homePages(controller, selectedChatId: _selectedChatId),
+                      Positioned(
+                        right: 16,
+                        bottom: 16,
+                        child: _newChatButton(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          _InvitationListBody(
-            controller: controller,
-            onAccept: _accept,
-            onDecline: _decline,
-            onRefresh: controller.load,
+        ),
+        VerticalDivider(
+          width: 1,
+          thickness: 1,
+          color: scheme.outlineVariant,
+        ),
+        Expanded(
+          key: const Key('conversationPane'),
+          child: ColoredBox(
+            color: scheme.surface,
+            child: selected == null
+                ? const Center(
+                    child: Text(
+                      'Select a conversation',
+                      key: Key('conversationEmpty'),
+                    ),
+                  )
+                : _selectedConversation(selected),
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+
+  Widget _selectedConversation(ChatSummary summary) {
+    final messages = MessageScope.maybeOf(context);
+    final chatId = summary.chat.id;
+    if (messages == null) {
+      return ChatDetailScreen(
+        key: ValueKey('chat-detail-$chatId'),
+        controller: widget.controller,
+        summary: summary,
+      );
+    }
+    return ConversationScreen(
+      key: ValueKey('conversation-$chatId'),
+      embedded: true,
+      chatController: widget.controller,
+      summary: summary,
+      messages: messages,
+      selfProfileImageId: widget.profile?.profile?.profileImageId,
     );
   }
 }
@@ -367,11 +499,13 @@ class _ChatListBody extends StatelessWidget {
     required this.controller,
     required this.onOpenChat,
     required this.onRefresh,
+    this.selectedChatId,
   });
 
   final ChatController controller;
   final ValueChanged<ChatSummary> onOpenChat;
   final Future<void> Function() onRefresh;
+  final int? selectedChatId;
 
   @override
   Widget build(BuildContext context) {
@@ -437,11 +571,16 @@ class _ChatListBody extends StatelessWidget {
             if (summary.membership.notificationsMuted) 'Muted',
           ];
           final unread = controller.unreadCountFor(summary);
+          final selected = summary.chat.id == selectedChatId;
           return ListTile(
             key: Key('chatListItem-${summary.chat.id}'),
+            selected: selected,
+            selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
             leading: ChatListAvatar(summary: summary),
             title: Text(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: unread > 0
                   ? Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
