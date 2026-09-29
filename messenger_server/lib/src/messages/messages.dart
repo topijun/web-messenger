@@ -15,6 +15,15 @@ class Messages {
   static const defaultPageSize = 30;
   static const maxPageSize = 100;
 
+  /// Newest messages inspected for one search. Ciphertext is not queried.
+  static const maxSearchScan = 300;
+
+  /// Matching messages returned from one search.
+  static const maxSearchResults = 50;
+
+  /// Maximum trimmed search query length.
+  static const maxSearchQueryLength = 200;
+
   /// Maximum original chat image/video size (20 MiB), before encryption.
   static const maxChatMediaBytes = 20 * 1024 * 1024;
 
@@ -350,9 +359,119 @@ class Messages {
     await _requireMemberships(session, chatId: chatId, userId: me.id!);
 
     final pageSize = _pageSize(limit);
+    final rows = await _historyRows(
+      session,
+      chatId: chatId,
+      beforeCreatedAt: beforeCreatedAt,
+      beforeId: beforeId,
+      limit: pageSize + 1,
+    );
+
+    final hasMore = rows.length > pageSize;
+    final page = hasMore ? rows.sublist(0, pageSize) : rows;
+    final views = await _viewsFor(session, me: me, messages: page);
+    final oldest = page.isEmpty ? null : page.last;
+    return MessageHistoryPage(
+      messages: views,
+      hasMore: hasMore,
+      nextCreatedAt: oldest?.createdAt,
+      nextId: oldest?.id,
+    );
+  }
+
+  /// Case-insensitive text search in a chat the caller belongs to.
+  ///
+  /// Loads at most [maxSearchScan] newest messages, decrypts text messages
+  /// with [EncryptionService], and returns at most [maxSearchResults] matches,
+  /// newest first. An empty query returns no rows and does not scan messages.
+  /// Deleted messages and non-text messages are skipped. Ciphertext is never
+  /// matched in SQL.
+  Future<List<MessageView>> searchText(
+    Session session, {
+    required int chatId,
+    required String query,
+  }) async {
+    final me = await CurrentMessengerUser.require(session);
+    await _requireMemberships(session, chatId: chatId, userId: me.id!);
+
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return const [];
+    }
+    if (trimmed.length > maxSearchQueryLength) {
+      throw MessengerInvalidChatInputException(
+        field: 'query',
+        message:
+            'Search text must be at most $maxSearchQueryLength characters.',
+      );
+    }
+    final needle = trimmed.toLowerCase();
+
+    final matched = <Message>[];
+    DateTime? beforeCreatedAt;
+    int? beforeId;
+    var scanned = 0;
+    while (scanned < maxSearchScan && matched.length < maxSearchResults) {
+      final batchSize = maxSearchScan - scanned < maxPageSize
+          ? maxSearchScan - scanned
+          : maxPageSize;
+      final rows = await _historyRows(
+        session,
+        chatId: chatId,
+        beforeCreatedAt: beforeCreatedAt,
+        beforeId: beforeId,
+        limit: batchSize,
+      );
+      if (rows.isEmpty) {
+        break;
+      }
+      scanned += rows.length;
+      for (final row in rows) {
+        if (matched.length >= maxSearchResults) {
+          break;
+        }
+        if (!_searchableText(row)) {
+          continue;
+        }
+        final String plaintext;
+        try {
+          plaintext = await EncryptionService.of(
+            session,
+          ).decrypt(row.encryptedText);
+        } on MessengerEncryptedDataException {
+          continue;
+        }
+        if (plaintext.toLowerCase().contains(needle)) {
+          matched.add(row);
+        }
+      }
+      if (rows.length < batchSize) {
+        break;
+      }
+      final oldest = rows.last;
+      beforeCreatedAt = oldest.createdAt;
+      beforeId = oldest.id;
+    }
+
+    return _viewsFor(session, me: me, messages: matched);
+  }
+
+  bool _searchableText(Message row) {
+    return row.deletedAt == null &&
+        row.type == MessageType.text &&
+        row.encryptedText.isNotEmpty;
+  }
+
+  Future<List<Message>> _historyRows(
+    Session session, {
+    required int chatId,
+    DateTime? beforeCreatedAt,
+    int? beforeId,
+    required int limit,
+  }) {
     final createdAtCursor = beforeCreatedAt;
     final idCursor = beforeId;
-    final rows = await Message.db.find(
+    return Message.db.find(
       session,
       where: (t) {
         var filter = t.chatId.equals(chatId);
@@ -368,18 +487,7 @@ class Messages {
         Order(column: t.createdAt, orderDescending: true),
         Order(column: t.id, orderDescending: true),
       ],
-      limit: pageSize + 1,
-    );
-
-    final hasMore = rows.length > pageSize;
-    final page = hasMore ? rows.sublist(0, pageSize) : rows;
-    final views = await _viewsFor(session, me: me, messages: page);
-    final oldest = page.isEmpty ? null : page.last;
-    return MessageHistoryPage(
-      messages: views,
-      hasMore: hasMore,
-      nextCreatedAt: oldest?.createdAt,
-      nextId: oldest?.id,
+      limit: limit,
     );
   }
 

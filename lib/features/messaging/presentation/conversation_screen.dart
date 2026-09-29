@@ -58,6 +58,11 @@ class _ConversationScreenState extends State<ConversationScreen>
   late final ConversationController _controller;
   final _composer = TextEditingController();
   final _composerFocus = FocusNode();
+  final _searchInput = TextEditingController();
+  final _messageScroll = ScrollController();
+  final _messageFocusKey = GlobalKey();
+  var _searchOpen = false;
+  var _focusAttempts = 0;
   Uint8List? _draftBytes;
   String? _draftLabel;
   ChatAudioRecorder? _createdRecorder;
@@ -102,6 +107,7 @@ class _ConversationScreenState extends State<ConversationScreen>
       poster: widget.poster ?? const DeviceVideoPoster(),
     );
     _controller.addListener(_onChanged);
+    _searchInput.addListener(_onSearchInput);
     _controller.load();
   }
 
@@ -122,9 +128,12 @@ class _ConversationScreenState extends State<ConversationScreen>
       unawaited(playback.dispose());
     }
     _controller.removeListener(_onChanged);
+    _searchInput.removeListener(_onSearchInput);
     _controller.dispose();
     _composer.dispose();
     _composerFocus.dispose();
+    _searchInput.dispose();
+    _messageScroll.dispose();
     super.dispose();
   }
 
@@ -157,6 +166,66 @@ class _ConversationScreenState extends State<ConversationScreen>
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _onSearchInput() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _toggleSearch() {
+    if (_searchOpen) {
+      _searchInput.clear();
+      _controller.clearSearch();
+    }
+    setState(() {
+      _searchOpen = !_searchOpen;
+    });
+  }
+
+  Future<void> _submitSearch() async {
+    await _controller.search(_searchInput.text);
+  }
+
+  Future<void> _openSearchResult(int messageId) async {
+    await _controller.load();
+    if (!mounted) {
+      return;
+    }
+    final found = await _controller.revealMessage(messageId);
+    if (!found || !mounted) {
+      return;
+    }
+    _focusAttempts = 0;
+    _stepToFocusedMessage();
+  }
+
+  void _stepToFocusedMessage() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final target = _messageFocusKey.currentContext;
+      if (target != null) {
+        Scrollable.ensureVisible(target, alignment: 0.4);
+        return;
+      }
+      _focusAttempts += 1;
+      if (_focusAttempts > 12 || !_messageScroll.hasClients) {
+        return;
+      }
+      final position = _messageScroll.position;
+      final next = (_messageScroll.offset + position.viewportDimension).clamp(
+        0.0,
+        position.maxScrollExtent,
+      );
+      if (next <= _messageScroll.offset) {
+        return;
+      }
+      _messageScroll.jumpTo(next);
+      _stepToFocusedMessage();
+    });
   }
 
   Future<void> _abandonRecording({bool notify = true}) async {
@@ -409,6 +478,12 @@ class _ConversationScreenState extends State<ConversationScreen>
         title: ChatNavTitle(summary: widget.summary),
         actions: [
           IconButton(
+            key: const Key('openMessageSearch'),
+            tooltip: _searchOpen ? 'Close search' : 'Search messages',
+            onPressed: _toggleSearch,
+            icon: Icon(_searchOpen ? Icons.close : Icons.search),
+          ),
+          IconButton(
             key: const Key('openChatDetails'),
             tooltip: 'Chat details',
             onPressed: _openDetails,
@@ -418,6 +493,18 @@ class _ConversationScreenState extends State<ConversationScreen>
       ),
       body: Column(
         children: [
+          if (_searchOpen)
+            _MessageSearch(
+              input: _searchInput,
+              searching: _controller.searching,
+              performed: _controller.searchPerformed,
+              error: _controller.searchError,
+              results: _controller.searchResults,
+              canSubmit:
+                  _searchInput.text.trim().isNotEmpty && !_controller.searching,
+              onSubmit: _submitSearch,
+              onSelect: _openSearchResult,
+            ),
           Expanded(child: _buildBody()),
           if (_controller.typingLabel != null)
             Padding(
@@ -539,6 +626,7 @@ class _ConversationScreenState extends State<ConversationScreen>
         Expanded(
           child: ListView.builder(
             key: const Key('messageList'),
+            controller: _messageScroll,
             reverse: true,
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
             itemCount: _controller.items.length,
@@ -549,6 +637,11 @@ class _ConversationScreenState extends State<ConversationScreen>
                 showAvatar: _showMessageAvatar(index),
                 controller: _controller,
                 playback: item.isAudio ? _playback : null,
+                focusKey:
+                    _controller.focusedMessageId != null &&
+                        item.serverId == _controller.focusedMessageId
+                    ? _messageFocusKey
+                    : null,
                 onRetry: () => _controller.retry(item.localKey),
                 onEdit: item.canEdit ? () => _startEdit(item) : null,
                 onDelete: item.canDelete ? () => _confirmDelete(item) : null,
@@ -557,6 +650,114 @@ class _ConversationScreenState extends State<ConversationScreen>
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MessageSearch extends StatelessWidget {
+  const _MessageSearch({
+    required this.input,
+    required this.searching,
+    required this.performed,
+    required this.error,
+    required this.results,
+    required this.canSubmit,
+    required this.onSubmit,
+    required this.onSelect,
+  });
+
+  final TextEditingController input;
+  final bool searching;
+  final bool performed;
+  final String? error;
+  final List<MessageView> results;
+  final bool canSubmit;
+  final VoidCallback onSubmit;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    key: const Key('messageSearchField'),
+                    controller: input,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => onSubmit(),
+                    decoration: const InputDecoration(
+                      hintText: 'Search messages',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  key: const Key('submitMessageSearch'),
+                  tooltip: 'Search',
+                  onPressed: canSubmit ? onSubmit : null,
+                  icon: const Icon(Icons.search),
+                ),
+              ],
+            ),
+            if (searching)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: LinearProgressIndicator(
+                  key: Key('messageSearchProgress'),
+                ),
+              ),
+            if (error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, right: 8),
+                child: Text(
+                  error!,
+                  key: const Key('messageSearchError'),
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ),
+            if (performed && error == null && results.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 8, right: 8),
+                child: Text(
+                  'No messages found.',
+                  key: Key('messageSearchEmpty'),
+                ),
+              ),
+            if (results.isNotEmpty)
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 180),
+                child: ListView(
+                  key: const Key('messageSearchResults'),
+                  shrinkWrap: true,
+                  children: [
+                    for (final view in results)
+                      ListTile(
+                        key: Key('searchResult-${view.message.id}'),
+                        dense: true,
+                        title: Text(view.senderUsername),
+                        subtitle: Text(
+                          view.message.encryptedText,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => onSelect(view.message.id!),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -733,6 +934,7 @@ class _MessageBubble extends StatelessWidget {
     required this.controller,
     required this.playback,
     required this.onRetry,
+    this.focusKey,
     this.onEdit,
     this.onDelete,
   });
@@ -742,6 +944,7 @@ class _MessageBubble extends StatelessWidget {
   final ConversationController controller;
   final ChatAudioPlayback? playback;
   final VoidCallback onRetry;
+  final Key? focusKey;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -778,10 +981,7 @@ class _MessageBubble extends StatelessWidget {
                   : CrossAxisAlignment.start,
               children: [
                 if (!item.isMine && item.senderUsername != null && showAvatar)
-                  Text(
-                    item.senderUsername!,
-                    style: theme.textTheme.labelSmall,
-                  ),
+                  Text(item.senderUsername!, style: theme.textTheme.labelSmall),
                 if (item.isDeleted)
                   Text(
                     'Message deleted',
@@ -826,6 +1026,7 @@ class _MessageBubble extends StatelessWidget {
       ),
     );
     return Align(
+      key: focusKey,
       alignment: align,
       child: Row(
         mainAxisSize: MainAxisSize.min,

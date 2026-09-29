@@ -175,8 +175,7 @@ class ConversationItem {
       status: status ?? this.status,
       isMine: isMine ?? this.isMine,
       senderUsername: senderUsername ?? this.senderUsername,
-      senderProfileImageId:
-          senderProfileImageId ?? this.senderProfileImageId,
+      senderProfileImageId: senderProfileImageId ?? this.senderProfileImageId,
       receipts: receipts ?? this.receipts,
       errorMessage: errorMessage ?? this.errorMessage,
       type: type ?? this.type,
@@ -219,6 +218,11 @@ class ConversationItem {
 
 /// Owns one chat's messages, send/retry, receipts, and realtime merge.
 class ConversationController extends ChangeNotifier {
+  /// Older history pages loaded when a search result is not on screen yet.
+  ///
+  /// The first page plus this many older pages covers the server search scan.
+  static const maxRevealPages = 10;
+
   /// Creates a [ConversationController].
   ConversationController({
     required MessageRepository repository,
@@ -279,6 +283,11 @@ class ConversationController extends ChangeNotifier {
   var _savingEdit = false;
   var _deleting = false;
   Future<void>? _loadInFlight;
+  List<MessageView> _searchResults = const [];
+  var _searching = false;
+  var _searchPerformed = false;
+  String? _searchError;
+  int? _focusedMessageId;
 
   ConversationStatus get status => _status;
   List<ConversationItem> get items => List.unmodifiable(_items);
@@ -293,6 +302,21 @@ class ConversationController extends ChangeNotifier {
   bool get isMutating => isUploading || _savingEdit || _deleting;
   ConversationItem? get editingItem => _editingItem;
   bool get isEditing => _editingItem != null;
+
+  /// Matches from the latest search in this chat, newest first.
+  List<MessageView> get searchResults => List.unmodifiable(_searchResults);
+
+  /// Whether a search request is in flight.
+  bool get searching => _searching;
+
+  /// Whether the latest non-empty query has finished.
+  bool get searchPerformed => _searchPerformed;
+
+  /// Search failure copy, separate from the conversation banner.
+  String? get searchError => _searchError;
+
+  /// Server id of the search result the list should bring into view.
+  int? get focusedMessageId => _focusedMessageId;
 
   /// Label for remote typists in this chat, or null when none.
   String? get typingLabel =>
@@ -368,6 +392,72 @@ class ConversationController extends ChangeNotifier {
       _loadingOlder = false;
       notifyListeners();
     }
+  }
+
+  /// Searches this chat for [query].
+  ///
+  /// Empty or whitespace queries clear the previous results and do not call
+  /// the repository.
+  Future<void> search(String query) async {
+    final trimmed = query.trim();
+    _focusedMessageId = null;
+    if (trimmed.isEmpty) {
+      _searchResults = const [];
+      _searchPerformed = false;
+      _searching = false;
+      _searchError = null;
+      notifyListeners();
+      return;
+    }
+    _searching = true;
+    _searchError = null;
+    notifyListeners();
+    try {
+      _searchResults = await _repository.searchText(
+        chatId: chatId,
+        query: trimmed,
+      );
+      _searchPerformed = true;
+    } catch (error) {
+      _searchResults = const [];
+      _searchPerformed = true;
+      _searchError = MessageErrorMapper.map(error);
+    } finally {
+      _searching = false;
+      notifyListeners();
+    }
+  }
+
+  /// Drops search results for this conversation.
+  void clearSearch() {
+    _searchResults = const [];
+    _searchPerformed = false;
+    _searching = false;
+    _searchError = null;
+    _focusedMessageId = null;
+    notifyListeners();
+  }
+
+  /// Loads older history until [messageId] is present, or the page bound is hit.
+  Future<bool> revealMessage(int messageId) async {
+    _focusedMessageId = messageId;
+    notifyListeners();
+    if (_containsMessage(messageId)) {
+      return true;
+    }
+    var pages = 0;
+    while (pages < maxRevealPages && hasMore) {
+      pages += 1;
+      await loadOlder();
+      if (_containsMessage(messageId)) {
+        return true;
+      }
+    }
+    return _containsMessage(messageId);
+  }
+
+  bool _containsMessage(int messageId) {
+    return _items.any((item) => item.serverId == messageId);
   }
 
   /// Sends [text]. Failed items stay in the list and can be retried.

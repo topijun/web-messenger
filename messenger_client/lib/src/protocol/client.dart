@@ -504,6 +504,22 @@ class EndpointMessage extends _i2.EndpointRef {
         {'mediaId': mediaId},
       );
 
+  /// Case-insensitive text search in a chat the caller belongs to.
+  ///
+  /// [query] is plaintext. The server decrypts stored message text and
+  /// matches it in memory. PostgreSQL is not asked to search ciphertext.
+  _i3.Future<List<_i12.MessageView>> searchText({
+    required int chatId,
+    required String query,
+  }) => caller.callServerEndpoint<List<_i12.MessageView>>(
+    'message',
+    'searchText',
+    {
+      'chatId': chatId,
+      'query': query,
+    },
+  );
+
   /// Newest-first history for a chat the caller belongs to.
   _i3.Future<_i15.MessageHistoryPage> listHistory({
     required int chatId,

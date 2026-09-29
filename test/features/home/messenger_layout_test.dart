@@ -144,6 +144,75 @@ void main() {
     messages.dispose();
   });
 
+  testWidgets('search in one wide conversation leaves the other intact', (
+    tester,
+  ) async {
+    final messages = FakeMessageRepository(
+      history: [
+        testMessageView(id: 11, chatId: 1, text: 'Hello from Bob'),
+        testMessageView(id: 22, chatId: 2, text: 'Hello from Carol'),
+      ],
+    );
+    final controller = await _pumpWide(
+      tester,
+      messages: messages,
+      chats: [
+        testDirectChat(id: 1, otherUsername: 'Bob'),
+        testDirectChat(id: 2, otherUsername: 'Carol'),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('chatListItem-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    await tester.pumpAndSettle();
+    final carolState = tester.state(
+      find.byKey(const ValueKey('conversation-2')),
+    );
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-1')),
+        matching: find.byKey(const Key('openMessageSearch')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-1')),
+        matching: find.byKey(const Key('messageSearchField')),
+      ),
+      'Bob',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-1')),
+        matching: find.byKey(const Key('searchResult-11')),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-2')),
+        matching: find.byKey(const Key('messageSearchResults')),
+      ),
+      findsNothing,
+    );
+    expect(find.text('Hello from Carol'), findsOneWidget);
+    expect(
+      tester.state(find.byKey(const ValueKey('conversation-2'))),
+      same(carolState),
+    );
+    expect(messages.searchQueries, [(chatId: 1, query: 'Bob')]);
+    expect(controller.activeChatId, 2);
+
+    controller.dispose();
+    messages.dispose();
+  });
+
   testWidgets('a third wide chat replaces the least recently selected panel', (
     tester,
   ) async {

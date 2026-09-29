@@ -693,6 +693,31 @@ class Endpoints extends _i1.EndpointDispatch {
                     mediaId: params['mediaId'],
                   ),
         ),
+        'searchText': _i1.MethodConnector(
+          name: 'searchText',
+          params: {
+            'chatId': _i1.ParameterDescription(
+              name: 'chatId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'query': _i1.ParameterDescription(
+              name: 'query',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['message'] as _i8.MessageEndpoint).searchText(
+                    session,
+                    chatId: params['chatId'],
+                    query: params['query'],
+                  ),
+        ),
         'listHistory': _i1.MethodConnector(
           name: 'listHistory',
           params: {

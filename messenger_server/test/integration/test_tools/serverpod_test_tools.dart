@@ -1187,6 +1187,41 @@ class _MessageEndpoint {
     });
   }
 
+  _i3.Future<List<_i12.MessageView>> searchText(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int chatId,
+    required String query,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'message',
+            method: 'searchText',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'message',
+          methodName: 'searchText',
+          parameters: _i1.testObjectToJson({
+            'chatId': chatId,
+            'query': query,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<List<_i12.MessageView>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
   _i3.Future<_i15.MessageHistoryPage> listHistory(
     _i1.TestSessionBuilder sessionBuilder, {
     required int chatId,

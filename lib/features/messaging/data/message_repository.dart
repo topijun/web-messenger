@@ -24,6 +24,14 @@ abstract class MessageRepository {
   /// Decrypts chat media the signed-in user is allowed to access.
   Future<ChatMedia> getChatMedia({required int mediaId});
 
+  /// Case-insensitive text search in [chatId].
+  ///
+  /// The server decrypts stored message text. An empty query is not sent.
+  Future<List<MessageView>> searchText({
+    required int chatId,
+    required String query,
+  });
+
   /// Newest-first history page for [chatId].
   Future<MessageHistoryPage> listHistory({
     required int chatId,
@@ -97,6 +105,14 @@ class ServerpodMessageRepository implements MessageRepository {
   @override
   Future<ChatMedia> getChatMedia({required int mediaId}) {
     return _client.message.getChatMedia(mediaId: mediaId);
+  }
+
+  @override
+  Future<List<MessageView>> searchText({
+    required int chatId,
+    required String query,
+  }) {
+    return _client.message.searchText(chatId: chatId, query: query);
   }
 
   @override

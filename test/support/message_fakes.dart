@@ -105,6 +105,8 @@ class FakeMessageRepository implements MessageRepository {
   final typingUpdates = <({int chatId, bool isTyping})>[];
   final editedTexts = <({int messageId, String text})>[];
   final deletedIds = <int>[];
+  final searchQueries = <({int chatId, String query})>[];
+  Object? searchError;
   int listHistoryCalls = 0;
   int watchCalls = 0;
   Object? typingError;
@@ -245,6 +247,29 @@ class FakeMessageRepository implements MessageRepository {
       throw MessengerMediaNotFoundException(mediaId: mediaId);
     }
     return stored;
+  }
+
+  @override
+  Future<List<MessageView>> searchText({
+    required int chatId,
+    required String query,
+  }) async {
+    searchQueries.add((chatId: chatId, query: query));
+    if (searchError != null) {
+      throw searchError!;
+    }
+    final needle = query.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return const [];
+    }
+    return [
+      for (final view in history)
+        if (view.message.chatId == chatId &&
+            view.message.deletedAt == null &&
+            view.message.type == MessageType.text &&
+            view.message.encryptedText.toLowerCase().contains(needle))
+          view,
+    ];
   }
 
   @override

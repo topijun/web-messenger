@@ -65,6 +65,18 @@ class MessageEndpoint extends Endpoint {
     return _messages.getChatMedia(session, mediaId: mediaId);
   }
 
+  /// Case-insensitive text search in a chat the caller belongs to.
+  ///
+  /// [query] is plaintext. The server decrypts stored message text and
+  /// matches it in memory. PostgreSQL is not asked to search ciphertext.
+  Future<List<MessageView>> searchText(
+    Session session, {
+    required int chatId,
+    required String query,
+  }) {
+    return _messages.searchText(session, chatId: chatId, query: query);
+  }
+
   /// Newest-first history for a chat the caller belongs to.
   Future<MessageHistoryPage> listHistory(
     Session session, {
