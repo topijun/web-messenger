@@ -1,0 +1,4 @@
+### Thrown when a Messenger username is already used by another user.
+exception: MessengerUsernameTakenException
+fields:
+  username: String

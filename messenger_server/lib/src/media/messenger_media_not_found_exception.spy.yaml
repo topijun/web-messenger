@@ -1,0 +1,4 @@
+### Thrown when the requested media does not exist or the caller cannot access it.
+exception: MessengerMediaNotFoundException
+fields:
+  mediaId: int

@@ -1,0 +1,19 @@
+### Realtime notification for a new message, receipt, typing, edit, delete,
+### or incoming invitation.
+###
+### Realtime is an optimization. The database remains the source of truth.
+### Typing fields are transient; they are never persisted.
+### Edit and delete events carry a MessageView keyed by stable message id.
+### Invitation events reuse this user's existing MessageCentral channel.
+### Pending direct invitations have no chat yet; [chatId] is 0 in that case.
+class: ChatEvent
+fields:
+  kind: ChatEventKind
+  chatId: int
+  message: MessageView?
+  receipt: MessageReceipt?
+  ### Set on typingStarted / typingStopped. Never includes draft text.
+  typingUserId: int?
+  typingUsername: String?
+  ### Set on invitation. Posted only to the invitation receiver.
+  invitation: ChatInvitationView?

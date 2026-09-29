@@ -1,0 +1,6 @@
+### Thrown when stored ciphertext cannot be decrypted.
+###
+### Does not include the ciphertext, key, or plaintext.
+exception: MessengerEncryptedDataException
+fields:
+  message: String

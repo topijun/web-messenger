@@ -1,0 +1,4 @@
+### Thrown when an invitation is missing or not owned by the caller.
+exception: MessengerInvitationNotFoundException
+fields:
+  invitationId: int

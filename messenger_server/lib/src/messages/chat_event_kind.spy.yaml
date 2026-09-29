@@ -1,0 +1,10 @@
+enum: ChatEventKind
+serialized: byName
+values:
+  - message
+  - receipt
+  - typingStarted
+  - typingStopped
+  - messageEdited
+  - messageDeleted
+  - invitation

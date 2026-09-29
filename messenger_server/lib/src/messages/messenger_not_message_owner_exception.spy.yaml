@@ -1,0 +1,4 @@
+### Thrown when the caller is not the sender of the message.
+exception: MessengerNotMessageOwnerException
+fields:
+  messageId: int

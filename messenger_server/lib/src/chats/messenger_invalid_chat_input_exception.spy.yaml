@@ -1,0 +1,5 @@
+### Thrown when chat input is missing or invalid.
+exception: MessengerInvalidChatInputException
+fields:
+  field: String
+  message: String

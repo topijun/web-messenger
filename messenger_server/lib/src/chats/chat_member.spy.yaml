@@ -1,0 +1,8 @@
+### A participant with a display username.
+class: ChatMember
+fields:
+  userId: int
+  username: String
+  profileImageId: int?
+  role: ChatParticipantRole
+  joinedAt: DateTime

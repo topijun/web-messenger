@@ -1,0 +1,4 @@
+### Thrown when a Messenger username does not match the server validation rules.
+exception: MessengerInvalidUsernameException
+fields:
+  username: String

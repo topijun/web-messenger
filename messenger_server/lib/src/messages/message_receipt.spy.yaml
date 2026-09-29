@@ -1,0 +1,19 @@
+### Per-recipient delivery and read timestamps for a [Message].
+###
+### One row per (message, recipient). The sender does not get a receipt.
+class: MessageReceipt
+table: messenger_message_receipt
+
+fields:
+  message: Message?, relation(name=message_receipts, onDelete=Cascade)
+  user: MessengerUser?, relation(onDelete=Cascade)
+  deliveredAt: DateTime?
+  readAt: DateTime?
+
+indexes:
+  messenger_message_receipt_unique_idx:
+    fields: messageId, userId
+    unique: true
+
+  messenger_message_receipt_user_idx:
+    fields: userId

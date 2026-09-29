@@ -1,0 +1,29 @@
+### Encrypted media blob and metadata. Used for profile pictures and
+### chat image/video/audio messages.
+###
+### [encryptedData] is AES-256-GCM ciphertext (version byte + nonce +
+### ciphertext + tag). Original media bytes are never stored.
+class: Media
+table: messenger_media
+
+fields:
+  ### Owner. Profile pictures are only readable/replaceable by this user.
+  user: MessengerUser?, relation(onDelete=Cascade)
+
+  type: MediaType
+  mimeType: String
+
+  ### Original plaintext size in bytes, before encryption.
+  size: int
+
+  ### AES-256-GCM packed ciphertext. Not the original file bytes.
+  encryptedData: ByteData
+
+  ### Optional encrypted JPEG poster media id for a video row.
+  thumbnailMediaId: int?
+
+  createdAt: DateTime, default=now
+
+indexes:
+  messenger_media_user_idx:
+    fields: userId

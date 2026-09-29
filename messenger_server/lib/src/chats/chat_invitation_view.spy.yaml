@@ -1,0 +1,9 @@
+### Pending or handled invitation with usernames for the client.
+class: ChatInvitationView
+fields:
+  invitation: ChatInvitation
+  senderUsername: String
+  senderProfileImageId: int?
+  receiverUsername: String
+  chatName: String?
+  isGroup: bool

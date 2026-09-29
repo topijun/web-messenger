@@ -1,0 +1,4 @@
+### Thrown when a Messenger username cannot be found.
+exception: MessengerUserNotFoundException
+fields:
+  username: String

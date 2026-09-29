@@ -1,0 +1,32 @@
+### A chat message. One row for every type of content.
+###
+### [encryptedText] is AES-256-GCM ciphertext produced by EncryptionService.
+### Do not add a separate plaintext text column.
+class: Message
+table: messenger_message
+
+fields:
+  chat: Chat?, relation(onDelete=Cascade)
+  sender: MessengerUser?, relation(onDelete=Cascade)
+  type: MessageType
+
+  ### Ciphertext of the message body (AES-256-GCM, server-side).
+  ### Clients send and receive plaintext through the API; PostgreSQL stores
+  ### only the versioned ciphertext from EncryptionService.
+  encryptedText: String
+
+  ### Optional encrypted image/video. Null for text messages.
+  media: Media?, relation(optional, onDelete=Restrict)
+
+  ### Optional Poll reference. Unused until the poll phase.
+  pollId: int?
+
+  createdAt: DateTime
+  editedAt: DateTime?
+  deletedAt: DateTime?
+
+  receipts: List<MessageReceipt>?, relation(name=message_receipts)
+
+indexes:
+  messenger_message_chat_created_idx:
+    fields: chatId, createdAt

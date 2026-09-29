@@ -1,0 +1,9 @@
+### How the found contact relates to the signed-in user.
+enum: ContactSearchRelation
+serialized: byName
+values:
+  - none
+  - self
+  - chatting
+  - invitationSent
+  - invitationReceived

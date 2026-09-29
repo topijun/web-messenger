@@ -1,0 +1,32 @@
+### Pending Messenger registration, reserved until email verification completes.
+class: MessengerRegistrationRequest
+serverOnly: true
+table: messenger_registration_request
+
+fields:
+  ### The official Email IDP account request this reservation belongs to.
+  accountRequestId: UuidValue
+
+  ### Normalized email used to attach the Messenger user after AuthUser creation.
+  email: String
+
+  ### Display username reserved for this registration.
+  username: String
+
+  ### Lower-cased username used for case-insensitive reservation.
+  usernameNormalized: String
+
+  createdAt: DateTime, default=now
+
+indexes:
+  messenger_registration_request_account_request_unique_idx:
+    fields: accountRequestId
+    unique: true
+
+  messenger_registration_request_email_unique_idx:
+    fields: email
+    unique: true
+
+  messenger_registration_request_username_normalized_unique_idx:
+    fields: usernameNormalized
+    unique: true

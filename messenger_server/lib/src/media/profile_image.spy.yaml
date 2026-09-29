@@ -1,0 +1,7 @@
+### Decrypted profile picture returned to the authenticated owner.
+class: ProfileImage
+fields:
+  mediaId: int
+  mimeType: String
+  size: int
+  bytes: ByteData

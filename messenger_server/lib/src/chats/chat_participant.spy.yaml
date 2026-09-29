@@ -1,0 +1,19 @@
+### Membership of a [MessengerUser] in a [Chat]. Settings are per user.
+class: ChatParticipant
+table: messenger_chat_participant
+
+fields:
+  chat: Chat?, relation(onDelete=Cascade)
+  user: MessengerUser?, relation(onDelete=Cascade)
+  role: ChatParticipantRole
+  joinedAt: DateTime, default=now
+  archived: bool, default=false
+  notificationsMuted: bool, default=false
+
+indexes:
+  messenger_chat_participant_unique_idx:
+    fields: chatId, userId
+    unique: true
+
+  messenger_chat_participant_user_idx:
+    fields: userId

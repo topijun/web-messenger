@@ -1,0 +1,5 @@
+enum: ChatType
+serialized: byName
+values:
+  - direct
+  - group

@@ -1,0 +1,11 @@
+### Chat row plus the current user's membership, for the chat list.
+class: ChatSummary
+fields:
+  chat: Chat
+  membership: ChatParticipant
+  otherUsernames: List<String>
+  ### Other participants in the same order as [otherUsernames], with ids only.
+  otherAvatars: List<UserAvatarRef>
+  ### Incoming messages in this chat whose recipient receipt has no readAt.
+  ### The signed-in user's own messages are never included.
+  unreadCount: int

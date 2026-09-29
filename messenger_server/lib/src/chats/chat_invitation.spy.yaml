@@ -1,0 +1,18 @@
+### Invitation to a direct or group [Chat]. Direct invitations have no chat
+### until they are accepted.
+class: ChatInvitation
+table: messenger_chat_invitation
+
+fields:
+  chat: Chat?, relation(optional, onDelete=Cascade)
+  sender: MessengerUser?, relation(name=chat_invitation_sender, onDelete=Cascade)
+  receiver: MessengerUser?, relation(name=chat_invitation_receiver, onDelete=Cascade)
+  status: ChatInvitationStatus
+  createdAt: DateTime, default=now
+
+indexes:
+  messenger_chat_invitation_receiver_status_idx:
+    fields: receiverId, status
+
+  messenger_chat_invitation_sender_idx:
+    fields: senderId

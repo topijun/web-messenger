@@ -1,0 +1,8 @@
+enum: MessageType
+serialized: byName
+values:
+  - text
+  - image
+  - video
+  - audio
+  - poll

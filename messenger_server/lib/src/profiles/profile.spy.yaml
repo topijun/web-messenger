@@ -1,0 +1,24 @@
+### Messenger presentation identity. 1:1 with [MessengerUser].
+###
+### [profileImage] is null when the user has no uploaded picture; Flutter then
+### shows the default avatar.
+class: Profile
+table: messenger_profile
+
+fields:
+  ### The [MessengerUser] this profile belongs to.
+  user: MessengerUser?, relation(onDelete=Cascade)
+
+  ### Encrypted about-me text (AES-256-GCM). Empty until the user writes one.
+  aboutMe: String
+
+  ### Optional encrypted profile picture. Null shows the default avatar.
+  profileImage: Media?, relation(optional, onDelete=SetNull)
+
+  createdAt: DateTime, default=now
+  updatedAt: DateTime, default=now
+
+indexes:
+  messenger_profile_user_unique_idx:
+    fields: userId
+    unique: true

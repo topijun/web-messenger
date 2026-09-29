@@ -1,0 +1,9 @@
+### Decrypted chat image or video returned to an authorized chat member.
+class: ChatMedia
+fields:
+  mediaId: int
+  type: MediaType
+  mimeType: String
+  size: int
+  bytes: ByteData
+  thumbnailMediaId: int?

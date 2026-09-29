@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "mobile_messenger",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "messenger_server",
+            "cwd": "${workspaceFolder}/messenger_server",
+            "request": "launch",
+            "type": "dart",
+            "preLaunchTask": "docker_compose_up",
+            "program": "bin/main.dart",
+            "args": [
+                "--apply-migrations"
+            ]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "messenger (full stack)",
+            "configurations": [
+                "messenger_server",
+                "mobile_messenger"
+            ],
+            "presentation": {
+                "order": 1
+            }
+        }
+    ]
+}

@@ -1,0 +1,54 @@
+emailIdp:
+  - login:
+  - startRegistration:
+  - verifyRegistrationCode:
+  - finishRegistration:
+  - startPasswordReset:
+  - verifyPasswordResetCode:
+  - finishPasswordReset:
+  - hasAccount:
+jwtRefresh:
+  - refreshAccessToken:
+chat:
+  - listMine:
+  - listMembers:
+  - setArchived:
+  - setMuted:
+  - createGroup:
+chatInvitation:
+  - inviteDirect:
+  - inviteToGroup:
+  - listPendingMine:
+  - accept:
+  - decline:
+device:
+  - register:
+  - touch:
+  - listMine:
+greeting:
+  - hello:
+message:
+  - sendText:
+  - sendMedia:
+  - sendAudio:
+  - getChatMedia:
+  - listHistory:
+  - markDelivered:
+  - markRead:
+  - watch:
+  - setTyping:
+  - editText:
+  - deleteMessage:
+profile:
+  - getMine:
+  - updateMine:
+  - uploadProfileImage:
+  - getProfileImage:
+messengerRegistration:
+  - start:
+  - verify:
+  - finish:
+messengerUser:
+  - get:
+  - lookupByUsername:
+  - searchContact:

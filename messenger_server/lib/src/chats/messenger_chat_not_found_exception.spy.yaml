@@ -1,0 +1,4 @@
+### Thrown when a chat does not exist or is not visible to the caller.
+exception: MessengerChatNotFoundException
+fields:
+  chatId: int

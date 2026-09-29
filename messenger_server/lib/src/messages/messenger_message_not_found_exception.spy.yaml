@@ -1,0 +1,4 @@
+### Thrown when a message does not exist.
+exception: MessengerMessageNotFoundException
+fields:
+  messageId: int

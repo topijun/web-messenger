@@ -1,0 +1,4 @@
+### Thrown when the invited user is already a participant.
+exception: MessengerAlreadyChatParticipantException
+fields:
+  username: String

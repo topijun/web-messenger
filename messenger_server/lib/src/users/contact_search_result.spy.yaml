@@ -1,0 +1,8 @@
+### Public contact match for invitation targeting.
+###
+### Does not include auth identifiers, email, or credentials.
+class: ContactSearchResult
+fields:
+  username: String
+  relation: ContactSearchRelation
+  profileImageId: int?

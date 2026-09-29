@@ -1,0 +1,4 @@
+### Thrown when an invitation was already accepted or declined.
+exception: MessengerInvitationAlreadyHandledException
+fields:
+  invitationId: int

@@ -1,0 +1,4 @@
+### Thrown when a group action requires admin and the caller is not one.
+exception: MessengerNotChatAdminException
+fields:
+  chatId: int

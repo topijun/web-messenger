@@ -1,0 +1,4 @@
+### Thrown when a pending invitation already exists.
+exception: MessengerDuplicateInvitationException
+fields:
+  username: String

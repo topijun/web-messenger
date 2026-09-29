@@ -1,0 +1,4 @@
+### Thrown when an [AuthUser] already has a [MessengerUser].
+exception: MessengerUserAlreadyExistsException
+fields:
+  authUserId: UuidValue

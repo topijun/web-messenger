@@ -1,0 +1,5 @@
+### Username plus optional profile-picture media id for list rows.
+class: UserAvatarRef
+fields:
+  username: String
+  profileImageId: int?

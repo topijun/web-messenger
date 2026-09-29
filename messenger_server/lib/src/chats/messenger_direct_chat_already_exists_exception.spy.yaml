@@ -1,0 +1,4 @@
+### Thrown when a direct chat between the two users already exists.
+exception: MessengerDirectChatAlreadyExistsException
+fields:
+  username: String

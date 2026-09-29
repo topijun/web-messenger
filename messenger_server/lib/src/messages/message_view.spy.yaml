@@ -1,0 +1,10 @@
+### A [Message] plus sender and receipt data for the current caller.
+class: MessageView
+fields:
+  message: Message
+  senderUsername: String
+  senderProfileImageId: int?
+  isMine: bool
+  receipts: List<MessageReceipt>
+  ### Encrypted JPEG poster for a video message. Null for other types.
+  thumbnailMediaId: int?

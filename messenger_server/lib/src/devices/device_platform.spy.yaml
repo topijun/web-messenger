@@ -1,0 +1,6 @@
+enum: DevicePlatform
+serialized: byName
+values:
+  - android
+  - ios
+  - web

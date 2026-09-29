@@ -1,0 +1,6 @@
+### Thrown when uploaded media is the wrong type or too large.
+exception: MessengerInvalidMediaException
+fields:
+  ### `unsupportedFormat` or `tooLarge`.
+  code: String
+  message: String

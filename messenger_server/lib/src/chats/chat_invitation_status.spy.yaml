@@ -1,0 +1,6 @@
+enum: ChatInvitationStatus
+serialized: byName
+values:
+  - pending
+  - accepted
+  - declined

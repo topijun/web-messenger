@@ -1,0 +1,6 @@
+enum: MediaType
+serialized: byName
+values:
+  - image
+  - video
+  - audio

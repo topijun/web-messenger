@@ -1,0 +1,4 @@
+### Thrown when the caller is not a participant of the chat.
+exception: MessengerNotChatMemberException
+fields:
+  chatId: int

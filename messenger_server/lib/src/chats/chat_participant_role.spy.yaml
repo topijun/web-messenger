@@ -1,0 +1,5 @@
+enum: ChatParticipantRole
+serialized: byName
+values:
+  - admin
+  - member

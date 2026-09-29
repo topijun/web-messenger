@@ -1,0 +1,5 @@
+### Thrown when registration input is missing or malformed.
+exception: MessengerInvalidRegistrationInputException
+fields:
+  field: String
+  message: String

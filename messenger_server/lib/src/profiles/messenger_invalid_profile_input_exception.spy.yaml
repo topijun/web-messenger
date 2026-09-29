@@ -1,0 +1,5 @@
+### Thrown when profile input is missing or too long.
+exception: MessengerInvalidProfileInputException
+fields:
+  field: String
+  message: String

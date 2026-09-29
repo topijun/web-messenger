@@ -1,0 +1,7 @@
+### A newest-first page of chat history with a cursor for older messages.
+class: MessageHistoryPage
+fields:
+  messages: List<MessageView>
+  hasMore: bool
+  nextCreatedAt: DateTime?
+  nextId: int?

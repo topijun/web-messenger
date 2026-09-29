@@ -1,0 +1,4 @@
+### Thrown when an authenticated AuthUser has no MessengerUser.
+exception: MessengerAccountRequiredException
+fields:
+  authUserId: UuidValue

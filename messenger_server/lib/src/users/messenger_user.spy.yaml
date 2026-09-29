@@ -1,0 +1,34 @@
+### Messenger domain identity linked to a Serverpod [AuthUser].
+###
+### Authentication credentials stay in Serverpod Auth. This table only stores
+### Messenger-specific data such as the unique username.
+class: MessengerUser
+table: messenger_user
+
+fields:
+  ### The [AuthUser] this Messenger user belongs to.
+  authUser: module:serverpod_auth_core:AuthUser?, relation(onDelete=Cascade)
+
+  ### Public Messenger username. Original casing is preserved for display.
+  username: String
+
+  ### Lower-cased username used for case-insensitive uniqueness.
+  usernameNormalized: String
+
+  createdAt: DateTime, default=now
+  updatedAt: DateTime, default=now
+
+  ### Invitations this user sent.
+  sentInvitations: List<ChatInvitation>?, relation(name=chat_invitation_sender)
+
+  ### Invitations this user received.
+  receivedInvitations: List<ChatInvitation>?, relation(name=chat_invitation_receiver)
+
+indexes:
+  messenger_user_auth_user_unique_idx:
+    fields: authUserId
+    unique: true
+
+  messenger_user_username_normalized_unique_idx:
+    fields: usernameNormalized
+    unique: true

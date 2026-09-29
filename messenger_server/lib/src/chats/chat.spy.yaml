@@ -1,0 +1,20 @@
+### A direct or group conversation.
+class: Chat
+table: messenger_chat
+
+fields:
+  ### Direct chats have two participants. Group chats can have more.
+  type: ChatType
+
+  ### Encrypted display name for group chats (AES-256-GCM). Null for direct chats.
+  name: String?
+
+  createdAt: DateTime, default=now
+  updatedAt: DateTime, default=now
+
+  ### Denormalized timestamp for chat-list sorting. Null until messages exist.
+  lastMessageAt: DateTime?
+
+indexes:
+  messenger_chat_last_message_idx:
+    fields: lastMessageAt
