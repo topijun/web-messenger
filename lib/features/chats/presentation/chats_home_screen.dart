@@ -184,14 +184,17 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
     }
   }
 
-  /// Opens [chatId] in the wide layout without pushing a route.
+  /// Opens or closes [chatId] in the wide layout without pushing a route.
   ///
-  /// A chat that is already open stays in its panel and becomes the most
-  /// recent choice. A third distinct chat replaces the least recently
-  /// chosen panel. The same chat is never shown twice.
+  /// Selecting a chat that is already open closes that panel. A newly chosen
+  /// chat fills an empty panel, or replaces the least recently chosen panel
+  /// when both are full. The same chat is never shown twice.
   void _selectWideChat(int chatId) {
     if (_openChatIds.contains(chatId)) {
-      _recentChatId = chatId;
+      _openChatIds.remove(chatId);
+      if (!_openChatIds.contains(_recentChatId)) {
+        _recentChatId = _openChatIds.isEmpty ? null : _openChatIds.last;
+      }
     } else if (_openChatIds.length < 2) {
       _openChatIds.add(chatId);
       _recentChatId = chatId;
@@ -200,7 +203,9 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
       _openChatIds[replaceAt < 0 ? 0 : replaceAt] = chatId;
       _recentChatId = chatId;
     }
-    widget.controller.setActiveChat(chatId);
+    if (widget.controller.activeChatId != _recentChatId) {
+      widget.controller.setActiveChat(_recentChatId);
+    }
     setState(() {});
   }
 

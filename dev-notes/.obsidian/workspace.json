@@ -284,7 +284,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 711.0703125
+    "width": 574.51171875
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -297,7 +297,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "a000dca0459cb5ad",
+  "active": "60e1f438084c6441",
   "lastOpenFiles": [
     "Web Roadmap.md",
     "Web Messenger.md",

@@ -104,12 +104,6 @@ void main() {
     expect(find.text('Hello from Carol'), findsNothing);
     expect(controller.activeChatId, 1);
 
-    await tester.tap(find.byKey(const Key('chatListItem-1')));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(ConversationScreen), findsOneWidget);
-    expect(find.byKey(const ValueKey('conversation-1')), findsOneWidget);
-
     await tester.tap(find.byKey(const Key('chatListItem-2')));
     await tester.pumpAndSettle();
 
@@ -194,17 +188,83 @@ void main() {
     );
     expect(controller.activeChatId, 3);
 
-    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    controller.dispose();
+    messages.dispose();
+  });
+
+  testWidgets('selecting an open wide chat closes that panel', (tester) async {
+    final messages = FakeMessageRepository(
+      history: [
+        testMessageView(id: 11, chatId: 1, text: 'Hello from Bob'),
+        testMessageView(id: 22, chatId: 2, text: 'Hello from Carol'),
+      ],
+    );
+    final controller = await _pumpWide(
+      tester,
+      messages: messages,
+      chats: [
+        testDirectChat(id: 1, otherUsername: 'Bob'),
+        testDirectChat(id: 2, otherUsername: 'Carol'),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('chatListItem-1')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('conversation-1')), findsOneWidget);
+
     await tester.tap(find.byKey(const Key('chatListItem-1')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('conversation-2')), findsOneWidget);
+    expect(find.byType(ConversationScreen), findsNothing);
+    expect(find.text('Select a conversation'), findsOneWidget);
+    expect(controller.activeChatId, isNull);
+
+    await tester.tap(find.byKey(const Key('chatListItem-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ConversationScreen), findsOneWidget);
     expect(find.byKey(const ValueKey('conversation-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('conversation-3')), findsNothing);
-    expect(find.text('Hello from Carol'), findsOneWidget);
     expect(find.text('Hello from Bob'), findsOneWidget);
-    expect(find.text('Hello from Dave'), findsNothing);
+    expect(controller.activeChatId, 1);
+
+    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    await tester.pumpAndSettle();
+    final bobState = tester.state(find.byKey(const ValueKey('conversation-1')));
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-1')),
+        matching: find.byType(TextField),
+      ),
+      'draft for bob',
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('conversation-2')), findsNothing);
+    expect(find.byKey(const ValueKey('conversation-1')), findsOneWidget);
+    expect(find.text('draft for bob'), findsOneWidget);
+    expect(find.text('Hello from Bob'), findsOneWidget);
+    expect(
+      tester.state(find.byKey(const ValueKey('conversation-1'))),
+      same(bobState),
+    );
+    expect(controller.activeChatId, 1);
+
+    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    await tester.pumpAndSettle();
+    expect(controller.activeChatId, 2);
+    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('conversation-2')), findsNothing);
+    expect(find.text('draft for bob'), findsOneWidget);
+    expect(
+      tester.state(find.byKey(const ValueKey('conversation-1'))),
+      same(bobState),
+    );
+    expect(controller.activeChatId, 1);
 
     controller.dispose();
     messages.dispose();
