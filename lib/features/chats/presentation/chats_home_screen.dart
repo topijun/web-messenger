@@ -50,7 +50,12 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
   Timer? _poll;
   var _appActive = true;
   var _wide = false;
-  int? _selectedChatId;
+
+  /// Wide-layout chats, left to right. At most two. Narrow layout ignores this.
+  final List<int> _openChatIds = [];
+
+  /// Wide-layout chat chosen most recently. The other open panel is replaced next.
+  int? _recentChatId;
 
   @override
   void initState() {
@@ -140,20 +145,63 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
     super.didChangeDependencies();
     final wide = isMessengerWideLayout(context);
     if (_wide && !wide) {
-      _selectedChatId = null;
+      _openChatIds.clear();
+      _recentChatId = null;
       widget.controller.setActiveChat(null);
     }
     _wide = wide;
   }
 
   void _onControllerChanged() {
-    if (_selectedChatId != null && _summaryFor(_selectedChatId) == null) {
-      _selectedChatId = null;
-      widget.controller.setActiveChat(null);
-    }
+    _dropMissingOpenChats();
     if (mounted) {
       setState(() {});
     }
+  }
+
+  /// Drops a wide-layout chat that is no longer in the list.
+  ///
+  /// [ChatController.activeChatId] stays the single most recently chosen
+  /// chat. It is not a set of open panels.
+  void _dropMissingOpenChats() {
+    if (!_wide) {
+      return;
+    }
+    final next = [
+      for (final id in _openChatIds)
+        if (_summaryFor(id) != null) id,
+    ];
+    if (next.length != _openChatIds.length) {
+      _openChatIds
+        ..clear()
+        ..addAll(next);
+    }
+    if (_recentChatId != null && !_openChatIds.contains(_recentChatId)) {
+      _recentChatId = _openChatIds.isEmpty ? null : _openChatIds.last;
+    }
+    if (widget.controller.activeChatId != _recentChatId) {
+      widget.controller.setActiveChat(_recentChatId);
+    }
+  }
+
+  /// Opens [chatId] in the wide layout without pushing a route.
+  ///
+  /// A chat that is already open stays in its panel and becomes the most
+  /// recent choice. A third distinct chat replaces the least recently
+  /// chosen panel. The same chat is never shown twice.
+  void _selectWideChat(int chatId) {
+    if (_openChatIds.contains(chatId)) {
+      _recentChatId = chatId;
+    } else if (_openChatIds.length < 2) {
+      _openChatIds.add(chatId);
+      _recentChatId = chatId;
+    } else {
+      final replaceAt = _openChatIds.indexWhere((id) => id != _recentChatId);
+      _openChatIds[replaceAt < 0 ? 0 : replaceAt] = chatId;
+      _recentChatId = chatId;
+    }
+    widget.controller.setActiveChat(chatId);
+    setState(() {});
   }
 
   ChatSummary? _summaryFor(int? chatId) {
@@ -259,9 +307,8 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
   Future<void> _openChat(ChatSummary summary) {
     if (isMessengerWideLayout(context)) {
       final chatId = summary.chat.id;
-      setState(() => _selectedChatId = chatId);
       if (chatId != null) {
-        widget.controller.setActiveChat(chatId);
+        _selectWideChat(chatId);
       }
       return Future<void>.value();
     }
@@ -396,7 +443,10 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
     );
   }
 
-  Widget _homePages(ChatController controller, {int? selectedChatId}) {
+  Widget _homePages(
+    ChatController controller, {
+    Set<int> selectedChatIds = const <int>{},
+  }) {
     return TabBarView(
       controller: _tabs,
       children: [
@@ -404,7 +454,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
           controller: controller,
           onOpenChat: _openChat,
           onRefresh: controller.load,
-          selectedChatId: selectedChatId,
+          selectedChatIds: selectedChatIds,
         ),
         _InvitationListBody(
           controller: controller,
@@ -417,8 +467,9 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
   }
 
   Widget _wideBody(ChatController controller) {
-    final selected = _summaryFor(_selectedChatId);
     final scheme = Theme.of(context).colorScheme;
+    final open = [for (final id in _openChatIds) ?_summaryFor(id)];
+    final selectedIds = _openChatIds.toSet();
     return Row(
       key: const Key('messengerWideLayout'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -435,7 +486,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      _homePages(controller, selectedChatId: _selectedChatId),
+                      _homePages(controller, selectedChatIds: selectedIds),
                       Positioned(
                         right: 16,
                         bottom: 16,
@@ -453,20 +504,35 @@ class _ChatHomeScreenState extends State<ChatHomeScreen>
           thickness: 1,
           color: scheme.outlineVariant,
         ),
-        Expanded(
-          key: const Key('conversationPane'),
-          child: ColoredBox(
-            color: scheme.surface,
-            child: selected == null
-                ? const Center(
-                    child: Text(
-                      'Select a conversation',
-                      key: Key('conversationEmpty'),
-                    ),
-                  )
-                : _selectedConversation(selected),
-          ),
-        ),
+        if (open.isEmpty)
+          Expanded(
+            key: const Key('conversationPane'),
+            child: ColoredBox(
+              color: scheme.surface,
+              child: const Center(
+                child: Text(
+                  'Select a conversation',
+                  key: Key('conversationEmpty'),
+                ),
+              ),
+            ),
+          )
+        else
+          for (var index = 0; index < open.length; index++) ...[
+            if (index > 0)
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: scheme.outlineVariant,
+              ),
+            Expanded(
+              key: Key('conversationPane-${open[index].chat.id}'),
+              child: ColoredBox(
+                color: scheme.surface,
+                child: _selectedConversation(open[index]),
+              ),
+            ),
+          ],
       ],
     );
   }
@@ -499,13 +565,13 @@ class _ChatListBody extends StatelessWidget {
     required this.controller,
     required this.onOpenChat,
     required this.onRefresh,
-    this.selectedChatId,
+    this.selectedChatIds = const <int>{},
   });
 
   final ChatController controller;
   final ValueChanged<ChatSummary> onOpenChat;
   final Future<void> Function() onRefresh;
-  final int? selectedChatId;
+  final Set<int> selectedChatIds;
 
   @override
   Widget build(BuildContext context) {
@@ -571,7 +637,7 @@ class _ChatListBody extends StatelessWidget {
             if (summary.membership.notificationsMuted) 'Muted',
           ];
           final unread = controller.unreadCountFor(summary);
-          final selected = summary.chat.id == selectedChatId;
+          final selected = selectedChatIds.contains(summary.chat.id);
           return ListTile(
             key: Key('chatListItem-${summary.chat.id}'),
             selected: selected,

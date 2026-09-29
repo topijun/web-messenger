@@ -74,7 +74,143 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('wide layout switches the visible conversation in place', (
+  testWidgets('wide layout keeps both selected conversations open', (
+    tester,
+  ) async {
+    final messages = FakeMessageRepository(
+      history: [
+        testMessageView(id: 11, chatId: 1, text: 'Hello from Bob'),
+        testMessageView(id: 22, chatId: 2, text: 'Hello from Carol'),
+      ],
+    );
+    final controller = await _pumpWide(
+      tester,
+      messages: messages,
+      chats: [
+        testDirectChat(id: 1, otherUsername: 'Bob'),
+        testDirectChat(id: 2, otherUsername: 'Carol'),
+      ],
+    );
+
+    expect(find.byKey(const Key('conversationPane')), findsOneWidget);
+    expect(find.byType(ConversationScreen), findsNothing);
+
+    await tester.tap(find.byKey(const Key('chatListItem-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ConversationScreen), findsOneWidget);
+    expect(find.byKey(const ValueKey('conversation-1')), findsOneWidget);
+    expect(find.text('Hello from Bob'), findsOneWidget);
+    expect(find.text('Hello from Carol'), findsNothing);
+    expect(controller.activeChatId, 1);
+
+    await tester.tap(find.byKey(const Key('chatListItem-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ConversationScreen), findsOneWidget);
+    expect(find.byKey(const ValueKey('conversation-1')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ConversationScreen), findsNWidgets(2));
+    expect(find.byKey(const ValueKey('conversation-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('conversation-2')), findsOneWidget);
+    expect(find.text('Hello from Bob'), findsOneWidget);
+    expect(find.text('Hello from Carol'), findsOneWidget);
+    expect(find.byType(ChatDetailScreen), findsNothing);
+    expect(controller.activeChatId, 2);
+
+    final carolState = tester.state(
+      find.byKey(const ValueKey('conversation-2')),
+    );
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-1')),
+        matching: find.byType(TextField),
+      ),
+      'draft for bob',
+    );
+    await tester.pump();
+
+    expect(find.text('draft for bob'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-2')),
+        matching: find.text('draft for bob'),
+      ),
+      findsNothing,
+    );
+    expect(
+      tester.state(find.byKey(const ValueKey('conversation-2'))),
+      same(carolState),
+    );
+
+    controller.dispose();
+    messages.dispose();
+  });
+
+  testWidgets('a third wide chat replaces the least recently selected panel', (
+    tester,
+  ) async {
+    final messages = FakeMessageRepository(
+      history: [
+        testMessageView(id: 11, chatId: 1, text: 'Hello from Bob'),
+        testMessageView(id: 22, chatId: 2, text: 'Hello from Carol'),
+        testMessageView(id: 33, chatId: 3, text: 'Hello from Dave'),
+      ],
+    );
+    final controller = await _pumpWide(
+      tester,
+      messages: messages,
+      chats: [
+        testDirectChat(id: 1, otherUsername: 'Bob'),
+        testDirectChat(id: 2, otherUsername: 'Carol'),
+        testDirectChat(id: 3, otherUsername: 'Dave'),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('chatListItem-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    await tester.pumpAndSettle();
+    final carolState = tester.state(
+      find.byKey(const ValueKey('conversation-2')),
+    );
+
+    await tester.tap(find.byKey(const Key('chatListItem-3')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ConversationScreen), findsNWidgets(2));
+    expect(find.byKey(const ValueKey('conversation-1')), findsNothing);
+    expect(find.byKey(const ValueKey('conversation-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('conversation-3')), findsOneWidget);
+    expect(find.text('Hello from Bob'), findsNothing);
+    expect(find.text('Hello from Carol'), findsOneWidget);
+    expect(find.text('Hello from Dave'), findsOneWidget);
+    expect(
+      tester.state(find.byKey(const ValueKey('conversation-2'))),
+      same(carolState),
+    );
+    expect(controller.activeChatId, 3);
+
+    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('chatListItem-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('conversation-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('conversation-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('conversation-3')), findsNothing);
+    expect(find.text('Hello from Carol'), findsOneWidget);
+    expect(find.text('Hello from Bob'), findsOneWidget);
+    expect(find.text('Hello from Dave'), findsNothing);
+
+    controller.dispose();
+    messages.dispose();
+  });
+
+  testWidgets('shrinking below the breakpoint leaves the chat list', (
     tester,
   ) async {
     final messages = FakeMessageRepository(
@@ -94,45 +230,9 @@ void main() {
 
     await tester.tap(find.byKey(const Key('chatListItem-1')));
     await tester.pumpAndSettle();
-
-    expect(find.byType(ConversationScreen), findsOneWidget);
-    expect(find.byKey(const Key('chatListItem-1')), findsOneWidget);
-    expect(find.byKey(const Key('chatListItem-2')), findsOneWidget);
-    expect(find.text('Hello from Bob'), findsOneWidget);
-    expect(find.text('Hello from Carol'), findsNothing);
-    expect(find.byKey(const Key('directNavAvatar-1')), findsOneWidget);
-    expect(controller.activeChatId, 1);
-
     await tester.tap(find.byKey(const Key('chatListItem-2')));
     await tester.pumpAndSettle();
-
-    expect(find.byType(ConversationScreen), findsOneWidget);
-    expect(find.text('Hello from Carol'), findsOneWidget);
-    expect(find.text('Hello from Bob'), findsNothing);
-    expect(find.byKey(const Key('directNavAvatar-2')), findsOneWidget);
-    expect(find.byKey(const Key('directNavAvatar-1')), findsNothing);
-    expect(controller.activeChatId, 2);
-    expect(find.byType(ChatDetailScreen), findsNothing);
-
-    controller.dispose();
-    messages.dispose();
-  });
-
-  testWidgets('shrinking below the breakpoint leaves the chat list', (
-    tester,
-  ) async {
-    final messages = FakeMessageRepository(
-      history: [testMessageView(id: 11, chatId: 1, text: 'Hello from Bob')],
-    );
-    final controller = await _pumpWide(
-      tester,
-      messages: messages,
-      chats: [testDirectChat(id: 1, otherUsername: 'Bob')],
-    );
-
-    await tester.tap(find.byKey(const Key('chatListItem-1')));
-    await tester.pumpAndSettle();
-    expect(find.byType(ConversationScreen), findsOneWidget);
+    expect(find.byType(ConversationScreen), findsNWidgets(2));
 
     _setSurface(tester, const Size(messengerWideLayoutBreakpoint - 1, 800));
     await tester.pumpAndSettle();
