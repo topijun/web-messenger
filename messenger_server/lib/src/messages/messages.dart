@@ -24,6 +24,18 @@ class Messages {
   /// Maximum trimmed search query length.
   static const maxSearchQueryLength = 200;
 
+  /// Maximum trimmed poll question length.
+  static const maxPollQuestionLength = 200;
+
+  /// Maximum trimmed poll option length.
+  static const maxPollOptionLength = 100;
+
+  /// Minimum options on a poll.
+  static const minPollOptions = 2;
+
+  /// Maximum options on a poll.
+  static const maxPollOptions = 6;
+
   /// Maximum original chat image/video size (20 MiB), before encryption.
   static const maxChatMediaBytes = 20 * 1024 * 1024;
 
@@ -75,6 +87,147 @@ class Messages {
       chatId: chatId,
       type: MessageType.text,
       cipherText: cipherText,
+    );
+  }
+
+  /// Creates a single-choice poll message in a group chat.
+  ///
+  /// [question] and [options] are plaintext. The server encrypts them before
+  /// insert. The poll is a normal [Message] with [MessageType.poll].
+  Future<MessageView> createPoll(
+    Session session, {
+    required int chatId,
+    required String question,
+    required List<String> options,
+    required bool anonymous,
+  }) async {
+    final prompt = _validatedPollQuestion(question);
+    final choices = _validatedPollOptions(options);
+    final encryption = EncryptionService.of(session);
+    final questionCipher = await encryption.encrypt(prompt);
+    final optionCiphers = <String>[
+      for (final choice in choices) await encryption.encrypt(choice),
+    ];
+    final cipherText = await encryption.encrypt('');
+    return _sendPersisted(
+      session,
+      chatId: chatId,
+      type: MessageType.poll,
+      cipherText: cipherText,
+      poll: (
+        question: prompt,
+        options: choices,
+        anonymous: anonymous,
+        questionCipher: questionCipher,
+        optionCiphers: optionCiphers,
+      ),
+    );
+  }
+
+  /// Casts, changes, or retracts the caller's vote on [pollId].
+  ///
+  /// Selecting the option the caller already voted for deletes that vote.
+  Future<MessageView> vote(
+    Session session, {
+    required int pollId,
+    required int optionId,
+  }) async {
+    final me = await CurrentMessengerUser.require(session);
+    final message = await Message.db.findFirstRow(
+      session,
+      where: (t) => t.pollId.equals(pollId) & t.deletedAt.equals(null),
+    );
+    if (message == null || message.type != MessageType.poll) {
+      throw MessengerPollNotFoundException(pollId: pollId);
+    }
+    final memberships = await _requireMemberships(
+      session,
+      chatId: message.chatId,
+      userId: me.id!,
+    );
+
+    await DatabaseUtil.runInTransactionOrSavepoint(
+      session.db,
+      null,
+      (transaction) async {
+        final option = await PollOption.db.findById(
+          session,
+          optionId,
+          transaction: transaction,
+        );
+        if (option == null || option.pollId != pollId) {
+          throw MessengerInvalidChatInputException(
+            field: 'optionId',
+            message: 'That option is not part of this poll.',
+          );
+        }
+        final existing = await PollVote.db.findFirstRow(
+          session,
+          where: (t) => t.pollId.equals(pollId) & t.userId.equals(me.id!),
+          transaction: transaction,
+        );
+        if (existing == null) {
+          try {
+            await PollVote.db.insertRow(
+              session,
+              PollVote(
+                pollId: pollId,
+                optionId: optionId,
+                userId: me.id!,
+                createdAt: DateTime.now().toUtc(),
+              ),
+              transaction: transaction,
+            );
+          } catch (_) {
+            final raced = await PollVote.db.findFirstRow(
+              session,
+              where: (t) => t.pollId.equals(pollId) & t.userId.equals(me.id!),
+              transaction: transaction,
+            );
+            if (raced == null) {
+              rethrow;
+            }
+            await _storeVoteChange(
+              session,
+              vote: raced,
+              optionId: optionId,
+              transaction: transaction,
+            );
+          }
+        } else {
+          await _storeVoteChange(
+            session,
+            vote: existing,
+            optionId: optionId,
+            transaction: transaction,
+          );
+        }
+      },
+    );
+
+    return _publishMessageView(
+      session,
+      me: me,
+      stored: message,
+      memberships: memberships,
+      kind: ChatEventKind.pollUpdated,
+    );
+  }
+
+  Future<void> _storeVoteChange(
+    Session session, {
+    required PollVote vote,
+    required int optionId,
+    required Transaction transaction,
+  }) async {
+    if (vote.optionId == optionId) {
+      await PollVote.db.deleteRow(session, vote, transaction: transaction);
+      return;
+    }
+    await PollVote.db.updateRow(
+      session,
+      vote.copyWith(optionId: optionId),
+      transaction: transaction,
     );
   }
 
@@ -715,6 +868,12 @@ class Messages {
       for (final row in mediaRows)
         if (row.thumbnailMediaId != null) row.id!: row.thumbnailMediaId!,
     };
+    final pollsById = await _pollViewsById(
+      session,
+      me: me,
+      messages: messages,
+      transaction: transaction,
+    );
 
     return [
       for (final message in messages)
@@ -727,6 +886,9 @@ class Messages {
           thumbnailMediaId: message.mediaId == null
               ? null
               : thumbnailByMediaId[message.mediaId!],
+          poll: message.deletedAt == null && message.pollId != null
+              ? pollsById[message.pollId!]
+              : null,
         ),
     ];
   }
@@ -738,6 +900,14 @@ class Messages {
     required String cipherText,
     Media? media,
     Media? thumbnail,
+    ({
+      String question,
+      List<String> options,
+      bool anonymous,
+      String questionCipher,
+      List<String> optionCiphers,
+    })?
+    poll,
   }) async {
     final me = await CurrentMessengerUser.require(session);
     final createdAt = DateTime.now().toUtc();
@@ -785,6 +955,15 @@ class Messages {
           storedMedia = inserted;
         }
 
+        final pollView = await _insertPoll(
+          session,
+          me: me,
+          chat: chat,
+          createdAt: createdAt,
+          poll: poll,
+          transaction: transaction,
+        );
+
         final message = await Message.db.insertRow(
           session,
           Message(
@@ -793,6 +972,7 @@ class Messages {
             type: type,
             encryptedText: cipherText,
             mediaId: mediaId,
+            pollId: pollView?.id,
             createdAt: createdAt,
           ),
           transaction: transaction,
@@ -831,6 +1011,7 @@ class Messages {
             isMine: true,
             receipts: receipts,
             thumbnailMediaId: storedMedia?.thumbnailMediaId,
+            poll: pollView,
           ),
           participantIds,
         );
@@ -858,6 +1039,208 @@ class Messages {
       session,
     ).decrypt(stored.encryptedText);
     return stored.copyWith(encryptedText: plaintext);
+  }
+
+  String _validatedPollQuestion(String question) {
+    final text = question.trim();
+    if (text.isEmpty) {
+      throw MessengerInvalidChatInputException(
+        field: 'question',
+        message: 'Poll question cannot be empty.',
+      );
+    }
+    if (text.length > maxPollQuestionLength) {
+      throw MessengerInvalidChatInputException(
+        field: 'question',
+        message:
+            'Poll question must be at most $maxPollQuestionLength characters.',
+      );
+    }
+    return text;
+  }
+
+  List<String> _validatedPollOptions(List<String> options) {
+    final choices = [for (final option in options) option.trim()];
+    if (choices.length < minPollOptions || choices.length > maxPollOptions) {
+      throw MessengerInvalidChatInputException(
+        field: 'options',
+        message:
+            'A poll needs between $minPollOptions and $maxPollOptions options.',
+      );
+    }
+    if (choices.any((choice) => choice.isEmpty)) {
+      throw MessengerInvalidChatInputException(
+        field: 'options',
+        message: 'Poll options cannot be empty.',
+      );
+    }
+    if (choices.any((choice) => choice.length > maxPollOptionLength)) {
+      throw MessengerInvalidChatInputException(
+        field: 'options',
+        message:
+            'Poll options must be at most $maxPollOptionLength characters.',
+      );
+    }
+    return choices;
+  }
+
+  Future<PollView?> _insertPoll(
+    Session session, {
+    required MessengerUser me,
+    required Chat chat,
+    required DateTime createdAt,
+    required ({
+      String question,
+      List<String> options,
+      bool anonymous,
+      String questionCipher,
+      List<String> optionCiphers,
+    })?
+    poll,
+    required Transaction transaction,
+  }) async {
+    if (poll == null) {
+      return null;
+    }
+    if (chat.type != ChatType.group) {
+      throw MessengerInvalidChatInputException(
+        field: 'chatType',
+        message: 'Polls can only be created in group chats.',
+      );
+    }
+    final stored = await Poll.db.insertRow(
+      session,
+      Poll(
+        question: poll.questionCipher,
+        anonymous: poll.anonymous,
+        createdById: me.id!,
+        createdAt: createdAt,
+      ),
+      transaction: transaction,
+    );
+    final storedOptions = await PollOption.db.insert(
+      session,
+      [
+        for (var index = 0; index < poll.optionCiphers.length; index++)
+          PollOption(
+            pollId: stored.id!,
+            text: poll.optionCiphers[index],
+            position: index,
+          ),
+      ],
+      transaction: transaction,
+    );
+    return PollView(
+      id: stored.id!,
+      question: poll.question,
+      anonymous: poll.anonymous,
+      totalVotes: 0,
+      options: [
+        for (var index = 0; index < storedOptions.length; index++)
+          PollOptionView(
+            id: storedOptions[index].id!,
+            text: poll.options[index],
+            position: index,
+            voteCount: 0,
+            voters: const [],
+          ),
+      ],
+    );
+  }
+
+  Future<Map<int, PollView>> _pollViewsById(
+    Session session, {
+    required MessengerUser me,
+    required List<Message> messages,
+    Transaction? transaction,
+  }) async {
+    final pollIds = {
+      for (final message in messages)
+        if (message.deletedAt == null && message.pollId != null)
+          message.pollId!,
+    };
+    if (pollIds.isEmpty) {
+      return const {};
+    }
+
+    final polls = await Poll.db.find(
+      session,
+      where: (t) => t.id.inSet(pollIds),
+      transaction: transaction,
+    );
+    final options = await PollOption.db.find(
+      session,
+      where: (t) => t.pollId.inSet(pollIds),
+      transaction: transaction,
+    );
+    final votes = await PollVote.db.find(
+      session,
+      where: (t) => t.pollId.inSet(pollIds),
+      transaction: transaction,
+    );
+    final publicVoterIds = {
+      for (final poll in polls)
+        if (!poll.anonymous)
+          for (final vote in votes)
+            if (vote.pollId == poll.id) vote.userId,
+    };
+    final voters = publicVoterIds.isEmpty
+        ? const <MessengerUser>[]
+        : await MessengerUser.db.find(
+            session,
+            where: (t) => t.id.inSet(publicVoterIds),
+            transaction: transaction,
+          );
+    final usernameById = {
+      for (final user in voters) user.id!: user.username,
+    };
+    final encryption = EncryptionService.of(session);
+
+    final views = <int, PollView>{};
+    for (final poll in polls) {
+      final pollOptions =
+          [
+            for (final option in options)
+              if (option.pollId == poll.id) option,
+          ]..sort((a, b) {
+            final byPosition = a.position.compareTo(b.position);
+            if (byPosition != 0) {
+              return byPosition;
+            }
+            return (a.id ?? 0).compareTo(b.id ?? 0);
+          });
+      final pollVotes = [
+        for (final vote in votes)
+          if (vote.pollId == poll.id) vote,
+      ];
+      final myVote = pollVotes.where((vote) => vote.userId == me.id);
+      views[poll.id!] = PollView(
+        id: poll.id!,
+        question: await encryption.decrypt(poll.question),
+        anonymous: poll.anonymous,
+        totalVotes: pollVotes.length,
+        myOptionId: myVote.isEmpty ? null : myVote.first.optionId,
+        options: [
+          for (final option in pollOptions)
+            PollOptionView(
+              id: option.id!,
+              text: await encryption.decrypt(option.text),
+              position: option.position,
+              voteCount: pollVotes
+                  .where((vote) => vote.optionId == option.id)
+                  .length,
+              voters: poll.anonymous
+                  ? const <String>[]
+                  : ([
+                      for (final vote in pollVotes)
+                        if (vote.optionId == option.id)
+                          usernameById[vote.userId] ?? 'Unknown',
+                    ]..sort()),
+            ),
+        ],
+      );
+    }
+    return views;
   }
 
   String _validatedText(String encryptedText) {
@@ -985,6 +1368,7 @@ class Messages {
                 isMine: userId == senderView.message.senderId,
                 receipts: senderView.receipts,
                 thumbnailMediaId: senderView.thumbnailMediaId,
+                poll: senderView.poll,
               ),
               receipt: event.receipt,
               typingUserId: event.typingUserId,

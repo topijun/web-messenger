@@ -208,7 +208,10 @@ void main() {
 
     await tester.tap(find.byKey(const Key('openMessageSearch')));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('messageSearchField')), 'hello');
+    await tester.enterText(
+      find.byKey(const Key('messageSearchField')),
+      'hello',
+    );
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
 

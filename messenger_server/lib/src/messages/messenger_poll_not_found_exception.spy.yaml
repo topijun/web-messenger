@@ -1,0 +1,4 @@
+### Thrown when a poll does not exist.
+exception: MessengerPollNotFoundException
+fields:
+  pollId: int

@@ -16,8 +16,9 @@ import '../chats/chat.dart' as _i2;
 import '../users/messenger_user.dart' as _i3;
 import '../messages/message_type.dart' as _i4;
 import '../media/media.dart' as _i5;
-import '../messages/message_receipt.dart' as _i6;
-import 'package:messenger_client/src/protocol/protocol.dart' as _i7;
+import '../messages/poll.dart' as _i6;
+import '../messages/message_receipt.dart' as _i7;
+import 'package:messenger_client/src/protocol/protocol.dart' as _i8;
 
 /// A chat message. One row for every type of content.
 ///
@@ -35,6 +36,7 @@ abstract class Message implements _i1.SerializableModel {
     this.mediaId,
     this.media,
     this.pollId,
+    this.poll,
     required this.createdAt,
     this.editedAt,
     this.deletedAt,
@@ -52,10 +54,11 @@ abstract class Message implements _i1.SerializableModel {
     int? mediaId,
     _i5.Media? media,
     int? pollId,
+    _i6.Poll? poll,
     required DateTime createdAt,
     DateTime? editedAt,
     DateTime? deletedAt,
-    List<_i6.MessageReceipt>? receipts,
+    List<_i7.MessageReceipt>? receipts,
   }) = _MessageImpl;
 
   factory Message.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -64,11 +67,11 @@ abstract class Message implements _i1.SerializableModel {
       chatId: jsonSerialization['chatId'] as int,
       chat: jsonSerialization['chat'] == null
           ? null
-          : _i7.Protocol().deserialize<_i2.Chat>(jsonSerialization['chat']),
+          : _i8.Protocol().deserialize<_i2.Chat>(jsonSerialization['chat']),
       senderId: jsonSerialization['senderId'] as int,
       sender: jsonSerialization['sender'] == null
           ? null
-          : _i7.Protocol().deserialize<_i3.MessengerUser>(
+          : _i8.Protocol().deserialize<_i3.MessengerUser>(
               jsonSerialization['sender'],
             ),
       type: _i4.MessageType.fromJson((jsonSerialization['type'] as String)),
@@ -76,8 +79,11 @@ abstract class Message implements _i1.SerializableModel {
       mediaId: jsonSerialization['mediaId'] as int?,
       media: jsonSerialization['media'] == null
           ? null
-          : _i7.Protocol().deserialize<_i5.Media>(jsonSerialization['media']),
+          : _i8.Protocol().deserialize<_i5.Media>(jsonSerialization['media']),
       pollId: jsonSerialization['pollId'] as int?,
+      poll: jsonSerialization['poll'] == null
+          ? null
+          : _i8.Protocol().deserialize<_i6.Poll>(jsonSerialization['poll']),
       createdAt: _i1.DateTimeJsonExtension.fromJson(
         jsonSerialization['createdAt'],
       ),
@@ -89,7 +95,7 @@ abstract class Message implements _i1.SerializableModel {
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['deletedAt']),
       receipts: jsonSerialization['receipts'] == null
           ? null
-          : _i7.Protocol().deserialize<List<_i6.MessageReceipt>>(
+          : _i8.Protocol().deserialize<List<_i7.MessageReceipt>>(
               jsonSerialization['receipts'],
             ),
     );
@@ -120,8 +126,10 @@ abstract class Message implements _i1.SerializableModel {
   /// Optional encrypted image/video. Null for text messages.
   _i5.Media? media;
 
-  /// Optional Poll reference. Unused until the poll phase.
   int? pollId;
+
+  /// Optional poll. Question and options live on [Poll], encrypted at rest.
+  _i6.Poll? poll;
 
   DateTime createdAt;
 
@@ -129,7 +137,7 @@ abstract class Message implements _i1.SerializableModel {
 
   DateTime? deletedAt;
 
-  List<_i6.MessageReceipt>? receipts;
+  List<_i7.MessageReceipt>? receipts;
 
   /// Returns a shallow copy of this [Message]
   /// with some or all fields replaced by the given arguments.
@@ -145,10 +153,11 @@ abstract class Message implements _i1.SerializableModel {
     int? mediaId,
     _i5.Media? media,
     int? pollId,
+    _i6.Poll? poll,
     DateTime? createdAt,
     DateTime? editedAt,
     DateTime? deletedAt,
-    List<_i6.MessageReceipt>? receipts,
+    List<_i7.MessageReceipt>? receipts,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -164,6 +173,7 @@ abstract class Message implements _i1.SerializableModel {
       if (mediaId != null) 'mediaId': mediaId,
       if (media != null) 'media': media?.toJson(),
       if (pollId != null) 'pollId': pollId,
+      if (poll != null) 'poll': poll?.toJson(),
       'createdAt': createdAt.toJson(),
       if (editedAt != null) 'editedAt': editedAt?.toJson(),
       if (deletedAt != null) 'deletedAt': deletedAt?.toJson(),
@@ -192,10 +202,11 @@ class _MessageImpl extends Message {
     int? mediaId,
     _i5.Media? media,
     int? pollId,
+    _i6.Poll? poll,
     required DateTime createdAt,
     DateTime? editedAt,
     DateTime? deletedAt,
-    List<_i6.MessageReceipt>? receipts,
+    List<_i7.MessageReceipt>? receipts,
   }) : super._(
          id: id,
          chatId: chatId,
@@ -207,6 +218,7 @@ class _MessageImpl extends Message {
          mediaId: mediaId,
          media: media,
          pollId: pollId,
+         poll: poll,
          createdAt: createdAt,
          editedAt: editedAt,
          deletedAt: deletedAt,
@@ -228,6 +240,7 @@ class _MessageImpl extends Message {
     Object? mediaId = _Undefined,
     Object? media = _Undefined,
     Object? pollId = _Undefined,
+    Object? poll = _Undefined,
     DateTime? createdAt,
     Object? editedAt = _Undefined,
     Object? deletedAt = _Undefined,
@@ -244,10 +257,11 @@ class _MessageImpl extends Message {
       mediaId: mediaId is int? ? mediaId : this.mediaId,
       media: media is _i5.Media? ? media : this.media?.copyWith(),
       pollId: pollId is int? ? pollId : this.pollId,
+      poll: poll is _i6.Poll? ? poll : this.poll?.copyWith(),
       createdAt: createdAt ?? this.createdAt,
       editedAt: editedAt is DateTime? ? editedAt : this.editedAt,
       deletedAt: deletedAt is DateTime? ? deletedAt : this.deletedAt,
-      receipts: receipts is List<_i6.MessageReceipt>?
+      receipts: receipts is List<_i7.MessageReceipt>?
           ? receipts
           : this.receipts?.map((e0) => e0.copyWith()).toList(),
     );

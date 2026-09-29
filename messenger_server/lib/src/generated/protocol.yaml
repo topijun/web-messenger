@@ -32,7 +32,10 @@ message:
   - sendMedia:
   - sendAudio:
   - getChatMedia:
+  - searchText:
   - listHistory:
+  - createPoll:
+  - vote:
   - markDelivered:
   - markRead:
   - watch:

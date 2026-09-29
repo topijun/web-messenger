@@ -19,6 +19,7 @@ MessageView testMessageView({
   MessageType type = MessageType.text,
   int? mediaId,
   int? thumbnailMediaId,
+  PollView? poll,
 }) {
   return MessageView(
     message: Message(
@@ -31,12 +32,14 @@ MessageView testMessageView({
       createdAt: createdAt ?? DateTime.utc(2026, 9, 20, 12, id),
       editedAt: editedAt,
       deletedAt: deletedAt,
+      pollId: poll?.id,
     ),
     senderUsername: senderUsername,
     senderProfileImageId: senderProfileImageId,
     isMine: isMine,
     receipts: receipts ?? const [],
     thumbnailMediaId: thumbnailMediaId,
+    poll: deletedAt == null ? poll : null,
   );
 }
 
@@ -106,7 +109,9 @@ class FakeMessageRepository implements MessageRepository {
   final editedTexts = <({int messageId, String text})>[];
   final deletedIds = <int>[];
   final searchQueries = <({int chatId, String query})>[];
+  final createdPolls = <({int chatId, String question, bool anonymous})>[];
   Object? searchError;
+  Object? pollError;
   int listHistoryCalls = 0;
   int watchCalls = 0;
   Object? typingError;
@@ -391,6 +396,114 @@ class FakeMessageRepository implements MessageRepository {
       isMine: previous.isMine,
       receipts: previous.receipts,
       thumbnailMediaId: previous.thumbnailMediaId,
+    );
+    history[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<MessageView> createPoll({
+    required int chatId,
+    required String question,
+    required List<String> options,
+    required bool anonymous,
+  }) async {
+    createdPolls.add((
+      chatId: chatId,
+      question: question,
+      anonymous: anonymous,
+    ));
+    if (pollError != null) {
+      throw pollError!;
+    }
+    final prompt = question.trim();
+    final choices = [for (final option in options) option.trim()];
+    if (prompt.isEmpty) {
+      throw MessengerInvalidChatInputException(
+        field: 'question',
+        message: 'Poll question cannot be empty.',
+      );
+    }
+    if (choices.length < 2 || choices.any((choice) => choice.isEmpty)) {
+      throw MessengerInvalidChatInputException(
+        field: 'options',
+        message: 'A poll needs between 2 and 6 options.',
+      );
+    }
+    nextId += 1;
+    final pollId = nextId;
+    final view = testMessageView(
+      id: nextId,
+      chatId: chatId,
+      senderId: 1,
+      text: '',
+      isMine: true,
+      senderUsername: 'Topi.J',
+      type: MessageType.poll,
+      createdAt: DateTime.now().toUtc(),
+      poll: PollView(
+        id: pollId,
+        question: prompt,
+        anonymous: anonymous,
+        totalVotes: 0,
+        options: [
+          for (var index = 0; index < choices.length; index++)
+            PollOptionView(
+              id: pollId * 10 + index,
+              text: choices[index],
+              position: index,
+              voteCount: 0,
+              voters: const [],
+            ),
+        ],
+      ),
+    );
+    history.insert(0, view);
+    return view;
+  }
+
+  @override
+  Future<MessageView> vote({required int pollId, required int optionId}) async {
+    if (pollError != null) {
+      throw pollError!;
+    }
+    final index = history.indexWhere((view) => view.poll?.id == pollId);
+    if (index < 0 || history[index].poll == null) {
+      throw MessengerPollNotFoundException(pollId: pollId);
+    }
+    final previous = history[index];
+    final poll = previous.poll!;
+    final current = poll.myOptionId;
+    final nextOptionId = current == optionId ? null : optionId;
+    final options = [
+      for (final option in poll.options)
+        PollOptionView(
+          id: option.id,
+          text: option.text,
+          position: option.position,
+          voteCount:
+              option.voteCount +
+              (option.id == nextOptionId ? 1 : 0) -
+              (option.id == current ? 1 : 0),
+          voters: poll.anonymous ? const <String>[] : option.voters,
+        ),
+    ];
+    final total =
+        poll.totalVotes +
+        (current == null && nextOptionId != null ? 1 : 0) -
+        (current != null && nextOptionId == null ? 1 : 0);
+    final updated = MessageView(
+      message: previous.message,
+      senderUsername: previous.senderUsername,
+      senderProfileImageId: previous.senderProfileImageId,
+      isMine: previous.isMine,
+      receipts: previous.receipts,
+      thumbnailMediaId: previous.thumbnailMediaId,
+      poll: poll.copyWith(
+        myOptionId: nextOptionId,
+        totalVotes: total,
+        options: options,
+      ),
     );
     history[index] = updated;
     return updated;

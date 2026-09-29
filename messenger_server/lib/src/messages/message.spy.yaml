@@ -18,8 +18,8 @@ fields:
   ### Optional encrypted image/video. Null for text messages.
   media: Media?, relation(optional, onDelete=Restrict)
 
-  ### Optional Poll reference. Unused until the poll phase.
-  pollId: int?
+  ### Optional poll. Question and options live on [Poll], encrypted at rest.
+  poll: Poll?, relation(optional, onDelete=SetNull)
 
   createdAt: DateTime
   editedAt: DateTime?

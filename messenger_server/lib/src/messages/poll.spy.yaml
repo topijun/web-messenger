@@ -1,0 +1,16 @@
+### A single-choice poll attached to one [Message] through [Message.pollId].
+###
+### [question] is AES-256-GCM ciphertext. Clients send and receive plaintext.
+class: Poll
+table: messenger_poll
+
+fields:
+  ### Ciphertext of the poll question.
+  question: String
+  anonymous: bool, default=false
+  createdBy: MessengerUser?, relation(onDelete=Restrict)
+  createdAt: DateTime
+
+indexes:
+  messenger_poll_created_by_idx:
+    fields: createdById

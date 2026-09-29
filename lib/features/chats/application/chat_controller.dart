@@ -131,6 +131,7 @@ class ChatController extends ChangeNotifier {
       case ChatEventKind.typingStopped:
       case ChatEventKind.messageEdited:
       case ChatEventKind.messageDeleted:
+      case ChatEventKind.pollUpdated:
         break;
     }
     if (changed) {

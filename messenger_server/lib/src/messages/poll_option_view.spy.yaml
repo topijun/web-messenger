@@ -1,0 +1,9 @@
+### One decrypted poll option for the caller.
+class: PollOptionView
+fields:
+  id: int
+  text: String
+  position: int
+  voteCount: int
+  ### Usernames who voted for this option. Empty when the poll is anonymous.
+  voters: List<String>

@@ -213,6 +213,90 @@ void main() {
     messages.dispose();
   });
 
+  testWidgets('a poll in one wide conversation leaves the other intact', (
+    tester,
+  ) async {
+    final messages = FakeMessageRepository(
+      history: [
+        testMessageView(
+          id: 11,
+          chatId: 1,
+          type: MessageType.poll,
+          text: '',
+          senderUsername: 'Alice',
+          poll: PollView(
+            id: 11,
+            question: 'Where should we go?',
+            anonymous: true,
+            totalVotes: 0,
+            options: [
+              PollOptionView(
+                id: 101,
+                text: 'Helsinki',
+                position: 0,
+                voteCount: 0,
+                voters: const [],
+              ),
+              PollOptionView(
+                id: 102,
+                text: 'Tampere',
+                position: 1,
+                voteCount: 0,
+                voters: const [],
+              ),
+            ],
+          ),
+        ),
+        testMessageView(id: 22, chatId: 2, text: 'Hello from Carol'),
+      ],
+    );
+    final controller = await _pumpWide(
+      tester,
+      messages: messages,
+      chats: [
+        testGroupChat(id: 1, name: 'Weekend'),
+        testDirectChat(id: 2, otherUsername: 'Carol'),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('chatListItem-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('chatListItem-2')));
+    await tester.pumpAndSettle();
+    final carolState = tester.state(
+      find.byKey(const ValueKey('conversation-2')),
+    );
+
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-1')),
+        matching: find.byKey(const Key('openPollComposer')),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('conversation-2')),
+        matching: find.byKey(const Key('openPollComposer')),
+      ),
+      findsNothing,
+    );
+
+    await tester.tap(find.byKey(const Key('pollOption-101')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 vote'), findsOneWidget);
+    expect(find.text('Hello from Carol'), findsOneWidget);
+    expect(
+      tester.state(find.byKey(const ValueKey('conversation-2'))),
+      same(carolState),
+    );
+    expect(controller.activeChatId, 2);
+
+    controller.dispose();
+    messages.dispose();
+  });
+
   testWidgets('a third wide chat replaces the least recently selected panel', (
     tester,
   ) async {

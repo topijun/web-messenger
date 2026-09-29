@@ -1261,6 +1261,80 @@ class _MessageEndpoint {
     });
   }
 
+  _i3.Future<_i12.MessageView> createPoll(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int chatId,
+    required String question,
+    required List<String> options,
+    required bool anonymous,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'message',
+            method: 'createPoll',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'message',
+          methodName: 'createPoll',
+          parameters: _i1.testObjectToJson({
+            'chatId': chatId,
+            'question': question,
+            'options': options,
+            'anonymous': anonymous,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i12.MessageView>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i12.MessageView> vote(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int pollId,
+    required int optionId,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'message',
+            method: 'vote',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'message',
+          methodName: 'vote',
+          parameters: _i1.testObjectToJson({
+            'pollId': pollId,
+            'optionId': optionId,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i12.MessageView>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
   _i3.Future<List<_i16.MessageReceipt>> markDelivered(
     _i1.TestSessionBuilder sessionBuilder, {
     required List<int> messageIds,

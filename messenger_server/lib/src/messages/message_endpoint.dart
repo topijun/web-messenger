@@ -94,6 +94,37 @@ class MessageEndpoint extends Endpoint {
     );
   }
 
+  /// Creates a poll message in a group chat the caller belongs to.
+  ///
+  /// [question] and [options] are plaintext. The server encrypts them.
+  Future<MessageView> createPoll(
+    Session session, {
+    required int chatId,
+    required String question,
+    required List<String> options,
+    required bool anonymous,
+  }) {
+    return _messages.createPoll(
+      session,
+      chatId: chatId,
+      question: question,
+      options: options,
+      anonymous: anonymous,
+    );
+  }
+
+  /// Selects [optionId] for the caller.
+  ///
+  /// Choosing the current option retracts the vote. Choosing a different
+  /// option replaces it.
+  Future<MessageView> vote(
+    Session session, {
+    required int pollId,
+    required int optionId,
+  }) {
+    return _messages.vote(session, pollId: pollId, optionId: optionId);
+  }
+
   /// Marks messages as delivered for the authenticated recipient.
   Future<List<MessageReceipt>> markDelivered(
     Session session, {

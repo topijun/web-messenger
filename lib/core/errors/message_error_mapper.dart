@@ -28,6 +28,9 @@ class MessageErrorMapper {
     if (error is MessengerMessageNotFoundException) {
       return 'That message could not be found.';
     }
+    if (error is MessengerPollNotFoundException) {
+      return 'That poll could not be found.';
+    }
     if (error is MessengerNotMessageRecipientException) {
       return 'You cannot update receipts for your own message.';
     }

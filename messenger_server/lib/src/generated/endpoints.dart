@@ -755,6 +755,67 @@ class Endpoints extends _i1.EndpointDispatch {
                     limit: params['limit'],
                   ),
         ),
+        'createPoll': _i1.MethodConnector(
+          name: 'createPoll',
+          params: {
+            'chatId': _i1.ParameterDescription(
+              name: 'chatId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'question': _i1.ParameterDescription(
+              name: 'question',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'options': _i1.ParameterDescription(
+              name: 'options',
+              type: _i1.getType<List<String>>(),
+              nullable: false,
+            ),
+            'anonymous': _i1.ParameterDescription(
+              name: 'anonymous',
+              type: _i1.getType<bool>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['message'] as _i8.MessageEndpoint).createPoll(
+                    session,
+                    chatId: params['chatId'],
+                    question: params['question'],
+                    options: params['options'],
+                    anonymous: params['anonymous'],
+                  ),
+        ),
+        'vote': _i1.MethodConnector(
+          name: 'vote',
+          params: {
+            'pollId': _i1.ParameterDescription(
+              name: 'pollId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'optionId': _i1.ParameterDescription(
+              name: 'optionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['message'] as _i8.MessageEndpoint).vote(
+                session,
+                pollId: params['pollId'],
+                optionId: params['optionId'],
+              ),
+        ),
         'markDelivered': _i1.MethodConnector(
           name: 'markDelivered',
           params: {

@@ -444,6 +444,21 @@ class _ConversationScreenState extends State<ConversationScreen>
     }
   }
 
+  Future<void> _openPollComposer() async {
+    final created = await showDialog<_PollDraft>(
+      context: context,
+      builder: (context) => const _PollComposer(),
+    );
+    if (created == null || !mounted) {
+      return;
+    }
+    await _controller.createPoll(
+      question: created.question,
+      options: created.options,
+      anonymous: created.anonymous,
+    );
+  }
+
   Future<void> _pick() async {
     final picked = await _imagePicker.pickMedia();
     final bytes = picked?.bytes;
@@ -539,6 +554,13 @@ class _ConversationScreenState extends State<ConversationScreen>
                     _previewing
                 ? null
                 : _pick,
+            onCreatePoll:
+                widget.summary.chat.type == ChatType.group &&
+                    !_controller.isEditing &&
+                    !_recording &&
+                    !_previewing
+                ? _openPollComposer
+                : null,
             sending: _controller.isMutating,
             draftLabel: _draftLabel,
             onClearDraft: _draftBytes == null ? null : _clearDraft,
@@ -762,6 +784,220 @@ class _MessageSearch extends StatelessWidget {
   }
 }
 
+class _PollDraft {
+  const _PollDraft({
+    required this.question,
+    required this.options,
+    required this.anonymous,
+  });
+
+  final String question;
+  final List<String> options;
+  final bool anonymous;
+}
+
+class _PollComposer extends StatefulWidget {
+  const _PollComposer();
+
+  @override
+  State<_PollComposer> createState() => _PollComposerState();
+}
+
+class _PollComposerState extends State<_PollComposer> {
+  final _question = TextEditingController();
+  final _options = [TextEditingController(), TextEditingController()];
+  var _anonymous = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _question.addListener(_rebuild);
+    for (final option in _options) {
+      option.addListener(_rebuild);
+    }
+  }
+
+  @override
+  void dispose() {
+    _question.dispose();
+    for (final option in _options) {
+      option.dispose();
+    }
+    super.dispose();
+  }
+
+  void _rebuild() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  bool get _canSubmit {
+    if (_question.text.trim().isEmpty) {
+      return false;
+    }
+    if (_options.length < 2) {
+      return false;
+    }
+    return _options.every((option) => option.text.trim().isNotEmpty);
+  }
+
+  void _addOption() {
+    if (_options.length >= 6) {
+      return;
+    }
+    final option = TextEditingController()..addListener(_rebuild);
+    setState(() {
+      _options.add(option);
+    });
+  }
+
+  void _submit() {
+    if (!_canSubmit) {
+      return;
+    }
+    Navigator.of(context).pop(
+      _PollDraft(
+        question: _question.text.trim(),
+        options: [for (final option in _options) option.text.trim()],
+        anonymous: _anonymous,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('New poll'),
+      content: SizedBox(
+        width: 360,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const Key('pollQuestionField'),
+                controller: _question,
+                decoration: const InputDecoration(
+                  labelText: 'Question',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              for (var index = 0; index < _options.length; index++) ...[
+                const SizedBox(height: 8),
+                TextField(
+                  key: Key('pollOptionField-$index'),
+                  controller: _options[index],
+                  decoration: InputDecoration(
+                    labelText: 'Option ${index + 1}',
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ],
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  key: const Key('addPollOption'),
+                  onPressed: _options.length >= 6 ? null : _addOption,
+                  child: const Text('Add option'),
+                ),
+              ),
+              SwitchListTile(
+                key: const Key('pollAnonymous'),
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Anonymous'),
+                value: _anonymous,
+                onChanged: (value) {
+                  setState(() {
+                    _anonymous = value;
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('submitPoll'),
+          onPressed: _canSubmit ? _submit : null,
+          child: const Text('Create'),
+        ),
+      ],
+    );
+  }
+}
+
+class _PollBody extends StatelessWidget {
+  const _PollBody({
+    required this.poll,
+    required this.enabled,
+    required this.onSelect,
+  });
+
+  final PollView poll;
+  final bool enabled;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final total = poll.totalVotes == 1 ? '1 vote' : '${poll.totalVotes} votes';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          poll.question,
+          key: Key('pollQuestion-${poll.id}'),
+          style: theme.textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        for (final option in poll.options)
+          InkWell(
+            key: Key('pollOption-${option.id}'),
+            onTap: enabled ? () => onSelect(option.id) : null,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        option.id == poll.myOptionId
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(option.text)),
+                      Text('${option.voteCount}'),
+                    ],
+                  ),
+                  if (!poll.anonymous && option.voters.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 26),
+                      child: Text(
+                        option.voters.join(', '),
+                        key: Key('pollVoters-${option.id}'),
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 4),
+        Text(total, key: Key('pollTotal-${poll.id}')),
+      ],
+    );
+  }
+}
+
 class _Composer extends StatelessWidget {
   const _Composer({
     required this.controller,
@@ -769,6 +1005,7 @@ class _Composer extends StatelessWidget {
     required this.onSend,
     required this.onChanged,
     required this.onPick,
+    this.onCreatePoll,
     required this.sending,
     this.draftLabel,
     this.onClearDraft,
@@ -788,6 +1025,7 @@ class _Composer extends StatelessWidget {
   final VoidCallback onSend;
   final ValueChanged<String> onChanged;
   final VoidCallback? onPick;
+  final VoidCallback? onCreatePoll;
   final bool sending;
   final String? draftLabel;
   final VoidCallback? onClearDraft;
@@ -880,6 +1118,13 @@ class _Composer extends StatelessWidget {
                     onPressed: onPick == null || sending ? null : onPick,
                     icon: const Icon(Icons.attach_file),
                   ),
+                  if (onCreatePoll != null)
+                    IconButton(
+                      key: const Key('openPollComposer'),
+                      tooltip: 'Poll',
+                      onPressed: sending ? null : onCreatePoll,
+                      icon: const Icon(Icons.poll_outlined),
+                    ),
                   Expanded(
                     child: TextField(
                       key: const Key('messageComposer'),
@@ -997,6 +1242,17 @@ class _MessageBubble extends StatelessWidget {
                     item: item,
                     controller: controller,
                     playback: audioPlayback,
+                  )
+                else if (item.isPoll && item.poll != null)
+                  _PollBody(
+                    poll: item.poll!,
+                    enabled: !controller.isVoting(item.poll!.id),
+                    onSelect: (optionId) {
+                      controller.voteOnPoll(
+                        pollId: item.poll!.id,
+                        optionId: optionId,
+                      );
+                    },
                   )
                 else
                   Text(item.text, key: Key('messageText-${item.localKey}')),

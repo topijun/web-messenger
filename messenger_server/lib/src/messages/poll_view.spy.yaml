@@ -1,0 +1,12 @@
+### Decrypted poll attached to a [MessageView].
+###
+### [myOptionId] is the caller's own vote. Other voters' identities are
+### included only when [anonymous] is false.
+class: PollView
+fields:
+  id: int
+  question: String
+  anonymous: bool
+  options: List<PollOptionView>
+  totalVotes: int
+  myOptionId: int?

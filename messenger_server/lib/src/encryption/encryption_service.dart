@@ -14,6 +14,7 @@ import '../generated/protocol.dart';
 ///
 /// Encrypted fields:
 /// - [Message.encryptedText]
+/// - [Poll.question] and [PollOption.text]
 /// - [Profile.aboutMe]
 /// - [Chat.name] (group chats only; direct chats keep `name` null)
 /// - [Media.encryptedData] (profile pictures and chat image/video)

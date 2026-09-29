@@ -8,3 +8,6 @@ fields:
   receipts: List<MessageReceipt>
   ### Encrypted JPEG poster for a video message. Null for other types.
   thumbnailMediaId: int?
+  ### Decrypted poll. Null unless [Message.type] is poll and the message
+  ### has not been deleted.
+  poll: PollView?

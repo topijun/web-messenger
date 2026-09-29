@@ -16,8 +16,9 @@ import '../chats/chat.dart' as _i2;
 import '../users/messenger_user.dart' as _i3;
 import '../messages/message_type.dart' as _i4;
 import '../media/media.dart' as _i5;
-import '../messages/message_receipt.dart' as _i6;
-import 'package:messenger_server/src/generated/protocol.dart' as _i7;
+import '../messages/poll.dart' as _i6;
+import '../messages/message_receipt.dart' as _i7;
+import 'package:messenger_server/src/generated/protocol.dart' as _i8;
 
 /// A chat message. One row for every type of content.
 ///
@@ -36,6 +37,7 @@ abstract class Message
     this.mediaId,
     this.media,
     this.pollId,
+    this.poll,
     required this.createdAt,
     this.editedAt,
     this.deletedAt,
@@ -53,10 +55,11 @@ abstract class Message
     int? mediaId,
     _i5.Media? media,
     int? pollId,
+    _i6.Poll? poll,
     required DateTime createdAt,
     DateTime? editedAt,
     DateTime? deletedAt,
-    List<_i6.MessageReceipt>? receipts,
+    List<_i7.MessageReceipt>? receipts,
   }) = _MessageImpl;
 
   factory Message.fromJson(Map<String, dynamic> jsonSerialization) {
@@ -65,11 +68,11 @@ abstract class Message
       chatId: jsonSerialization['chatId'] as int,
       chat: jsonSerialization['chat'] == null
           ? null
-          : _i7.Protocol().deserialize<_i2.Chat>(jsonSerialization['chat']),
+          : _i8.Protocol().deserialize<_i2.Chat>(jsonSerialization['chat']),
       senderId: jsonSerialization['senderId'] as int,
       sender: jsonSerialization['sender'] == null
           ? null
-          : _i7.Protocol().deserialize<_i3.MessengerUser>(
+          : _i8.Protocol().deserialize<_i3.MessengerUser>(
               jsonSerialization['sender'],
             ),
       type: _i4.MessageType.fromJson((jsonSerialization['type'] as String)),
@@ -77,8 +80,11 @@ abstract class Message
       mediaId: jsonSerialization['mediaId'] as int?,
       media: jsonSerialization['media'] == null
           ? null
-          : _i7.Protocol().deserialize<_i5.Media>(jsonSerialization['media']),
+          : _i8.Protocol().deserialize<_i5.Media>(jsonSerialization['media']),
       pollId: jsonSerialization['pollId'] as int?,
+      poll: jsonSerialization['poll'] == null
+          ? null
+          : _i8.Protocol().deserialize<_i6.Poll>(jsonSerialization['poll']),
       createdAt: _i1.DateTimeJsonExtension.fromJson(
         jsonSerialization['createdAt'],
       ),
@@ -90,7 +96,7 @@ abstract class Message
           : _i1.DateTimeJsonExtension.fromJson(jsonSerialization['deletedAt']),
       receipts: jsonSerialization['receipts'] == null
           ? null
-          : _i7.Protocol().deserialize<List<_i6.MessageReceipt>>(
+          : _i8.Protocol().deserialize<List<_i7.MessageReceipt>>(
               jsonSerialization['receipts'],
             ),
     );
@@ -123,8 +129,10 @@ abstract class Message
   /// Optional encrypted image/video. Null for text messages.
   _i5.Media? media;
 
-  /// Optional Poll reference. Unused until the poll phase.
   int? pollId;
+
+  /// Optional poll. Question and options live on [Poll], encrypted at rest.
+  _i6.Poll? poll;
 
   DateTime createdAt;
 
@@ -132,7 +140,7 @@ abstract class Message
 
   DateTime? deletedAt;
 
-  List<_i6.MessageReceipt>? receipts;
+  List<_i7.MessageReceipt>? receipts;
 
   @override
   _i1.Table<int?> get table => t;
@@ -151,10 +159,11 @@ abstract class Message
     int? mediaId,
     _i5.Media? media,
     int? pollId,
+    _i6.Poll? poll,
     DateTime? createdAt,
     DateTime? editedAt,
     DateTime? deletedAt,
-    List<_i6.MessageReceipt>? receipts,
+    List<_i7.MessageReceipt>? receipts,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -170,6 +179,7 @@ abstract class Message
       if (mediaId != null) 'mediaId': mediaId,
       if (media != null) 'media': media?.toJson(),
       if (pollId != null) 'pollId': pollId,
+      if (poll != null) 'poll': poll?.toJson(),
       'createdAt': createdAt.toJson(),
       if (editedAt != null) 'editedAt': editedAt?.toJson(),
       if (deletedAt != null) 'deletedAt': deletedAt?.toJson(),
@@ -192,6 +202,7 @@ abstract class Message
       if (mediaId != null) 'mediaId': mediaId,
       if (media != null) 'media': media?.toJsonForProtocol(),
       if (pollId != null) 'pollId': pollId,
+      if (poll != null) 'poll': poll?.toJsonForProtocol(),
       'createdAt': createdAt.toJson(),
       if (editedAt != null) 'editedAt': editedAt?.toJson(),
       if (deletedAt != null) 'deletedAt': deletedAt?.toJson(),
@@ -204,12 +215,14 @@ abstract class Message
     _i2.ChatInclude? chat,
     _i3.MessengerUserInclude? sender,
     _i5.MediaInclude? media,
-    _i6.MessageReceiptIncludeList? receipts,
+    _i6.PollInclude? poll,
+    _i7.MessageReceiptIncludeList? receipts,
   }) {
     return MessageInclude._(
       chat: chat,
       sender: sender,
       media: media,
+      poll: poll,
       receipts: receipts,
     );
   }
@@ -254,10 +267,11 @@ class _MessageImpl extends Message {
     int? mediaId,
     _i5.Media? media,
     int? pollId,
+    _i6.Poll? poll,
     required DateTime createdAt,
     DateTime? editedAt,
     DateTime? deletedAt,
-    List<_i6.MessageReceipt>? receipts,
+    List<_i7.MessageReceipt>? receipts,
   }) : super._(
          id: id,
          chatId: chatId,
@@ -269,6 +283,7 @@ class _MessageImpl extends Message {
          mediaId: mediaId,
          media: media,
          pollId: pollId,
+         poll: poll,
          createdAt: createdAt,
          editedAt: editedAt,
          deletedAt: deletedAt,
@@ -290,6 +305,7 @@ class _MessageImpl extends Message {
     Object? mediaId = _Undefined,
     Object? media = _Undefined,
     Object? pollId = _Undefined,
+    Object? poll = _Undefined,
     DateTime? createdAt,
     Object? editedAt = _Undefined,
     Object? deletedAt = _Undefined,
@@ -306,10 +322,11 @@ class _MessageImpl extends Message {
       mediaId: mediaId is int? ? mediaId : this.mediaId,
       media: media is _i5.Media? ? media : this.media?.copyWith(),
       pollId: pollId is int? ? pollId : this.pollId,
+      poll: poll is _i6.Poll? ? poll : this.poll?.copyWith(),
       createdAt: createdAt ?? this.createdAt,
       editedAt: editedAt is DateTime? ? editedAt : this.editedAt,
       deletedAt: deletedAt is DateTime? ? deletedAt : this.deletedAt,
-      receipts: receipts is List<_i6.MessageReceipt>?
+      receipts: receipts is List<_i7.MessageReceipt>?
           ? receipts
           : this.receipts?.map((e0) => e0.copyWith()).toList(),
     );
@@ -435,8 +452,10 @@ class MessageTable extends _i1.Table<int?> {
   /// Optional encrypted image/video. Null for text messages.
   _i5.MediaTable? _media;
 
-  /// Optional Poll reference. Unused until the poll phase.
   late final _i1.ColumnInt pollId;
+
+  /// Optional poll. Question and options live on [Poll], encrypted at rest.
+  _i6.PollTable? _poll;
 
   late final _i1.ColumnDateTime createdAt;
 
@@ -444,9 +463,9 @@ class MessageTable extends _i1.Table<int?> {
 
   late final _i1.ColumnDateTime deletedAt;
 
-  _i6.MessageReceiptTable? ___receipts;
+  _i7.MessageReceiptTable? ___receipts;
 
-  _i1.ManyRelation<_i6.MessageReceiptTable>? _receipts;
+  _i1.ManyRelation<_i7.MessageReceiptTable>? _receipts;
 
   _i2.ChatTable get chat {
     if (_chat != null) return _chat!;
@@ -487,32 +506,45 @@ class MessageTable extends _i1.Table<int?> {
     return _media!;
   }
 
-  _i6.MessageReceiptTable get __receipts {
+  _i6.PollTable get poll {
+    if (_poll != null) return _poll!;
+    _poll = _i1.createRelationTable(
+      relationFieldName: 'poll',
+      field: Message.t.pollId,
+      foreignField: _i6.Poll.t.id,
+      tableRelation: tableRelation,
+      createTable: (foreignTableRelation) =>
+          _i6.PollTable(tableRelation: foreignTableRelation),
+    );
+    return _poll!;
+  }
+
+  _i7.MessageReceiptTable get __receipts {
     if (___receipts != null) return ___receipts!;
     ___receipts = _i1.createRelationTable(
       relationFieldName: '__receipts',
       field: Message.t.id,
-      foreignField: _i6.MessageReceipt.t.messageId,
+      foreignField: _i7.MessageReceipt.t.messageId,
       tableRelation: tableRelation,
       createTable: (foreignTableRelation) =>
-          _i6.MessageReceiptTable(tableRelation: foreignTableRelation),
+          _i7.MessageReceiptTable(tableRelation: foreignTableRelation),
     );
     return ___receipts!;
   }
 
-  _i1.ManyRelation<_i6.MessageReceiptTable> get receipts {
+  _i1.ManyRelation<_i7.MessageReceiptTable> get receipts {
     if (_receipts != null) return _receipts!;
     var relationTable = _i1.createRelationTable(
       relationFieldName: 'receipts',
       field: Message.t.id,
-      foreignField: _i6.MessageReceipt.t.messageId,
+      foreignField: _i7.MessageReceipt.t.messageId,
       tableRelation: tableRelation,
       createTable: (foreignTableRelation) =>
-          _i6.MessageReceiptTable(tableRelation: foreignTableRelation),
+          _i7.MessageReceiptTable(tableRelation: foreignTableRelation),
     );
-    _receipts = _i1.ManyRelation<_i6.MessageReceiptTable>(
+    _receipts = _i1.ManyRelation<_i7.MessageReceiptTable>(
       tableWithRelations: relationTable,
-      table: _i6.MessageReceiptTable(
+      table: _i7.MessageReceiptTable(
         tableRelation: relationTable.tableRelation!.lastRelation,
       ),
     );
@@ -544,6 +576,9 @@ class MessageTable extends _i1.Table<int?> {
     if (relationField == 'media') {
       return media;
     }
+    if (relationField == 'poll') {
+      return poll;
+    }
     if (relationField == 'receipts') {
       return __receipts;
     }
@@ -556,11 +591,13 @@ class MessageInclude extends _i1.IncludeObject {
     _i2.ChatInclude? chat,
     _i3.MessengerUserInclude? sender,
     _i5.MediaInclude? media,
-    _i6.MessageReceiptIncludeList? receipts,
+    _i6.PollInclude? poll,
+    _i7.MessageReceiptIncludeList? receipts,
   }) {
     _chat = chat;
     _sender = sender;
     _media = media;
+    _poll = poll;
     _receipts = receipts;
   }
 
@@ -570,13 +607,16 @@ class MessageInclude extends _i1.IncludeObject {
 
   _i5.MediaInclude? _media;
 
-  _i6.MessageReceiptIncludeList? _receipts;
+  _i6.PollInclude? _poll;
+
+  _i7.MessageReceiptIncludeList? _receipts;
 
   @override
   Map<String, _i1.Include?> get includes => {
     'chat': _chat,
     'sender': _sender,
     'media': _media,
+    'poll': _poll,
     'receipts': _receipts,
   };
 
@@ -913,7 +953,7 @@ class MessageAttachRepository {
   Future<void> receipts(
     _i1.DatabaseSession session,
     Message message,
-    List<_i6.MessageReceipt> messageReceipt, {
+    List<_i7.MessageReceipt> messageReceipt, {
     _i1.Transaction? transaction,
   }) async {
     if (messageReceipt.any((e) => e.id == null)) {
@@ -926,9 +966,9 @@ class MessageAttachRepository {
     var $messageReceipt = messageReceipt
         .map((e) => e.copyWith(messageId: message.id))
         .toList();
-    await session.db.update<_i6.MessageReceipt>(
+    await session.db.update<_i7.MessageReceipt>(
       $messageReceipt,
-      columns: [_i6.MessageReceipt.t.messageId],
+      columns: [_i7.MessageReceipt.t.messageId],
       transaction: transaction,
     );
   }
@@ -1006,12 +1046,35 @@ class MessageAttachRowRepository {
     );
   }
 
+  /// Creates a relation between the given [Message] and [Poll]
+  /// by setting the [Message]'s foreign key `pollId` to refer to the [Poll].
+  Future<void> poll(
+    _i1.DatabaseSession session,
+    Message message,
+    _i6.Poll poll, {
+    _i1.Transaction? transaction,
+  }) async {
+    if (message.id == null) {
+      throw ArgumentError.notNull('message.id');
+    }
+    if (poll.id == null) {
+      throw ArgumentError.notNull('poll.id');
+    }
+
+    var $message = message.copyWith(pollId: poll.id);
+    await session.db.updateRow<Message>(
+      $message,
+      columns: [Message.t.pollId],
+      transaction: transaction,
+    );
+  }
+
   /// Creates a relation between this [Message] and the given [MessageReceipt]
   /// by setting the [MessageReceipt]'s foreign key `messageId` to refer to this [Message].
   Future<void> receipts(
     _i1.DatabaseSession session,
     Message message,
-    _i6.MessageReceipt messageReceipt, {
+    _i7.MessageReceipt messageReceipt, {
     _i1.Transaction? transaction,
   }) async {
     if (messageReceipt.id == null) {
@@ -1022,9 +1085,9 @@ class MessageAttachRowRepository {
     }
 
     var $messageReceipt = messageReceipt.copyWith(messageId: message.id);
-    await session.db.updateRow<_i6.MessageReceipt>(
+    await session.db.updateRow<_i7.MessageReceipt>(
       $messageReceipt,
-      columns: [_i6.MessageReceipt.t.messageId],
+      columns: [_i7.MessageReceipt.t.messageId],
       transaction: transaction,
     );
   }
@@ -1040,7 +1103,7 @@ class MessageDetachRepository {
   /// the related record.
   Future<void> receipts(
     _i1.DatabaseSession session,
-    List<_i6.MessageReceipt> messageReceipt, {
+    List<_i7.MessageReceipt> messageReceipt, {
     _i1.Transaction? transaction,
   }) async {
     if (messageReceipt.any((e) => e.id == null)) {
@@ -1050,9 +1113,9 @@ class MessageDetachRepository {
     var $messageReceipt = messageReceipt
         .map((e) => e.copyWith(messageId: null))
         .toList();
-    await session.db.update<_i6.MessageReceipt>(
+    await session.db.update<_i7.MessageReceipt>(
       $messageReceipt,
-      columns: [_i6.MessageReceipt.t.messageId],
+      columns: [_i7.MessageReceipt.t.messageId],
       transaction: transaction,
     );
   }
@@ -1083,6 +1146,28 @@ class MessageDetachRowRepository {
     );
   }
 
+  /// Detaches the relation between this [Message] and the [Poll] set in `poll`
+  /// by setting the [Message]'s foreign key `pollId` to `null`.
+  ///
+  /// This removes the association between the two models without deleting
+  /// the related record.
+  Future<void> poll(
+    _i1.DatabaseSession session,
+    Message message, {
+    _i1.Transaction? transaction,
+  }) async {
+    if (message.id == null) {
+      throw ArgumentError.notNull('message.id');
+    }
+
+    var $message = message.copyWith(pollId: null);
+    await session.db.updateRow<Message>(
+      $message,
+      columns: [Message.t.pollId],
+      transaction: transaction,
+    );
+  }
+
   /// Detaches the relation between this [Message] and the given [MessageReceipt]
   /// by setting the [MessageReceipt]'s foreign key `messageId` to `null`.
   ///
@@ -1090,7 +1175,7 @@ class MessageDetachRowRepository {
   /// the related record.
   Future<void> receipts(
     _i1.DatabaseSession session,
-    _i6.MessageReceipt messageReceipt, {
+    _i7.MessageReceipt messageReceipt, {
     _i1.Transaction? transaction,
   }) async {
     if (messageReceipt.id == null) {
@@ -1098,9 +1183,9 @@ class MessageDetachRowRepository {
     }
 
     var $messageReceipt = messageReceipt.copyWith(messageId: null);
-    await session.db.updateRow<_i6.MessageReceipt>(
+    await session.db.updateRow<_i7.MessageReceipt>(
       $messageReceipt,
-      columns: [_i6.MessageReceipt.t.messageId],
+      columns: [_i7.MessageReceipt.t.messageId],
       transaction: transaction,
     );
   }

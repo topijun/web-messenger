@@ -60,6 +60,17 @@ abstract class MessageRepository {
 
   /// Soft-deletes the caller's own message.
   Future<MessageView> deleteMessage({required int messageId});
+
+  /// Creates a group-chat poll message.
+  Future<MessageView> createPoll({
+    required int chatId,
+    required String question,
+    required List<String> options,
+    required bool anonymous,
+  });
+
+  /// Selects [optionId]. The same option again retracts the vote.
+  Future<MessageView> vote({required int pollId, required int optionId});
 }
 
 /// [MessageRepository] that talks to the generated Serverpod client.
@@ -168,5 +179,25 @@ class ServerpodMessageRepository implements MessageRepository {
   @override
   Future<MessageView> deleteMessage({required int messageId}) {
     return _client.message.deleteMessage(messageId: messageId);
+  }
+
+  @override
+  Future<MessageView> createPoll({
+    required int chatId,
+    required String question,
+    required List<String> options,
+    required bool anonymous,
+  }) {
+    return _client.message.createPoll(
+      chatId: chatId,
+      question: question,
+      options: options,
+      anonymous: anonymous,
+    );
+  }
+
+  @override
+  Future<MessageView> vote({required int pollId, required int optionId}) {
+    return _client.message.vote(pollId: pollId, optionId: optionId);
   }
 }

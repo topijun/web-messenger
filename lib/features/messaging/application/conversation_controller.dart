@@ -77,6 +77,7 @@ class ConversationItem {
     this.mimeType,
     this.editedAt,
     this.deletedAt,
+    this.poll,
   });
 
   final String localKey;
@@ -96,12 +97,16 @@ class ConversationItem {
   final String? mimeType;
   final DateTime? editedAt;
   final DateTime? deletedAt;
+  final PollView? poll;
 
   /// Whether this row is an image or video message.
   bool get isMedia => type == MessageType.image || type == MessageType.video;
 
   /// Whether this row is a WAV audio message.
   bool get isAudio => type == MessageType.audio;
+
+  /// Whether this row is a group poll.
+  bool get isPoll => type == MessageType.poll && poll != null && !isDeleted;
 
   /// Soft-deleted placeholder; original content is not shown.
   bool get isDeleted => deletedAt != null;
@@ -145,6 +150,7 @@ class ConversationItem {
       thumbnailMediaId: view.thumbnailMediaId,
       editedAt: view.message.editedAt,
       deletedAt: view.message.deletedAt,
+      poll: view.message.deletedAt == null ? view.poll : null,
     );
   }
 
@@ -166,6 +172,7 @@ class ConversationItem {
     String? mimeType,
     DateTime? editedAt,
     DateTime? deletedAt,
+    PollView? poll,
   }) {
     return ConversationItem(
       localKey: localKey ?? this.localKey,
@@ -185,6 +192,7 @@ class ConversationItem {
       mimeType: mimeType ?? this.mimeType,
       editedAt: editedAt ?? this.editedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      poll: poll ?? this.poll,
     );
   }
 
@@ -288,6 +296,7 @@ class ConversationController extends ChangeNotifier {
   var _searchPerformed = false;
   String? _searchError;
   int? _focusedMessageId;
+  final Set<int> _votingPollIds = {};
 
   ConversationStatus get status => _status;
   List<ConversationItem> get items => List.unmodifiable(_items);
@@ -317,6 +326,9 @@ class ConversationController extends ChangeNotifier {
 
   /// Server id of the search result the list should bring into view.
   int? get focusedMessageId => _focusedMessageId;
+
+  /// Whether a vote request for [pollId] is in flight.
+  bool isVoting(int pollId) => _votingPollIds.contains(pollId);
 
   /// Label for remote typists in this chat, or null when none.
   String? get typingLabel =>
@@ -458,6 +470,49 @@ class ConversationController extends ChangeNotifier {
 
   bool _containsMessage(int messageId) {
     return _items.any((item) => item.serverId == messageId);
+  }
+
+  /// Sends a poll in this group chat.
+  Future<void> createPoll({
+    required String question,
+    required List<String> options,
+    required bool anonymous,
+  }) async {
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final view = await _repository.createPoll(
+        chatId: chatId,
+        question: question,
+        options: options,
+        anonymous: anonymous,
+      );
+      _upsertView(view);
+      _sort();
+    } catch (error) {
+      _errorMessage = MessageErrorMapper.map(error);
+    }
+    notifyListeners();
+  }
+
+  /// Selects [optionId], or retracts the vote when it is already selected.
+  Future<void> voteOnPoll({required int pollId, required int optionId}) async {
+    if (_votingPollIds.contains(pollId)) {
+      return;
+    }
+    _votingPollIds.add(pollId);
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final view = await _repository.vote(pollId: pollId, optionId: optionId);
+      _upsertView(view);
+      _sort();
+    } catch (error) {
+      _errorMessage = MessageErrorMapper.map(error);
+    } finally {
+      _votingPollIds.remove(pollId);
+      notifyListeners();
+    }
   }
 
   /// Sends [text]. Failed items stay in the list and can be retried.
@@ -1045,7 +1100,8 @@ class ConversationController extends ChangeNotifier {
   bool _isMessageKind(ChatEventKind kind) {
     return kind == ChatEventKind.message ||
         kind == ChatEventKind.messageEdited ||
-        kind == ChatEventKind.messageDeleted;
+        kind == ChatEventKind.messageDeleted ||
+        kind == ChatEventKind.pollUpdated;
   }
 
   Future<void> _emitTyping(bool isTyping) async {

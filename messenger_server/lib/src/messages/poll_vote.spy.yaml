@@ -1,0 +1,19 @@
+### One user's active vote. Absence of a row means the user has not voted.
+###
+### [userId] is stored for anonymous polls too, so the voter can change or
+### retract. Anonymous polls omit voter names from client views.
+class: PollVote
+table: messenger_poll_vote
+
+fields:
+  poll: Poll?, relation(onDelete=Cascade)
+  option: PollOption?, relation(onDelete=Cascade)
+  user: MessengerUser?, relation(onDelete=Cascade)
+  createdAt: DateTime
+
+indexes:
+  messenger_poll_vote_unique_idx:
+    fields: pollId, userId
+    unique: true
+  messenger_poll_vote_option_idx:
+    fields: optionId

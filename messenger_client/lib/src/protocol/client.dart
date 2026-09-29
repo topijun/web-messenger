@@ -537,6 +537,41 @@ class EndpointMessage extends _i2.EndpointRef {
     },
   );
 
+  /// Creates a poll message in a group chat the caller belongs to.
+  ///
+  /// [question] and [options] are plaintext. The server encrypts them.
+  _i3.Future<_i12.MessageView> createPoll({
+    required int chatId,
+    required String question,
+    required List<String> options,
+    required bool anonymous,
+  }) => caller.callServerEndpoint<_i12.MessageView>(
+    'message',
+    'createPoll',
+    {
+      'chatId': chatId,
+      'question': question,
+      'options': options,
+      'anonymous': anonymous,
+    },
+  );
+
+  /// Selects [optionId] for the caller.
+  ///
+  /// Choosing the current option retracts the vote. Choosing a different
+  /// option replaces it.
+  _i3.Future<_i12.MessageView> vote({
+    required int pollId,
+    required int optionId,
+  }) => caller.callServerEndpoint<_i12.MessageView>(
+    'message',
+    'vote',
+    {
+      'pollId': pollId,
+      'optionId': optionId,
+    },
+  );
+
   /// Marks messages as delivered for the authenticated recipient.
   _i3.Future<List<_i16.MessageReceipt>> markDelivered({
     required List<int> messageIds,

@@ -1,0 +1,13 @@
+### One answer on a [Poll]. [text] is AES-256-GCM ciphertext.
+class: PollOption
+table: messenger_poll_option
+
+fields:
+  poll: Poll?, relation(onDelete=Cascade)
+  ### Ciphertext of the option label.
+  text: String
+  position: int
+
+indexes:
+  messenger_poll_option_order_idx:
+    fields: pollId, position

@@ -14,7 +14,8 @@
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
 import '../messages/message.dart' as _i2;
 import '../messages/message_receipt.dart' as _i3;
-import 'package:messenger_client/src/protocol/protocol.dart' as _i4;
+import '../messages/poll_view.dart' as _i4;
+import 'package:messenger_client/src/protocol/protocol.dart' as _i5;
 
 /// A [Message] plus sender and receipt data for the current caller.
 abstract class MessageView implements _i1.SerializableModel {
@@ -25,6 +26,7 @@ abstract class MessageView implements _i1.SerializableModel {
     required this.isMine,
     required this.receipts,
     this.thumbnailMediaId,
+    this.poll,
   });
 
   factory MessageView({
@@ -34,20 +36,24 @@ abstract class MessageView implements _i1.SerializableModel {
     required bool isMine,
     required List<_i3.MessageReceipt> receipts,
     int? thumbnailMediaId,
+    _i4.PollView? poll,
   }) = _MessageViewImpl;
 
   factory MessageView.fromJson(Map<String, dynamic> jsonSerialization) {
     return MessageView(
-      message: _i4.Protocol().deserialize<_i2.Message>(
+      message: _i5.Protocol().deserialize<_i2.Message>(
         jsonSerialization['message'],
       ),
       senderUsername: jsonSerialization['senderUsername'] as String,
       senderProfileImageId: jsonSerialization['senderProfileImageId'] as int?,
       isMine: _i1.BoolJsonExtension.fromJson(jsonSerialization['isMine']),
-      receipts: _i4.Protocol().deserialize<List<_i3.MessageReceipt>>(
+      receipts: _i5.Protocol().deserialize<List<_i3.MessageReceipt>>(
         jsonSerialization['receipts'],
       ),
       thumbnailMediaId: jsonSerialization['thumbnailMediaId'] as int?,
+      poll: jsonSerialization['poll'] == null
+          ? null
+          : _i5.Protocol().deserialize<_i4.PollView>(jsonSerialization['poll']),
     );
   }
 
@@ -64,6 +70,10 @@ abstract class MessageView implements _i1.SerializableModel {
   /// Encrypted JPEG poster for a video message. Null for other types.
   int? thumbnailMediaId;
 
+  /// Decrypted poll. Null unless [Message.type] is poll and the message
+  /// has not been deleted.
+  _i4.PollView? poll;
+
   /// Returns a shallow copy of this [MessageView]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
@@ -74,6 +84,7 @@ abstract class MessageView implements _i1.SerializableModel {
     bool? isMine,
     List<_i3.MessageReceipt>? receipts,
     int? thumbnailMediaId,
+    _i4.PollView? poll,
   });
   @override
   Map<String, dynamic> toJson() {
@@ -86,6 +97,7 @@ abstract class MessageView implements _i1.SerializableModel {
       'isMine': isMine,
       'receipts': receipts.toJson(valueToJson: (v) => v.toJson()),
       if (thumbnailMediaId != null) 'thumbnailMediaId': thumbnailMediaId,
+      if (poll != null) 'poll': poll?.toJson(),
     };
   }
 
@@ -105,6 +117,7 @@ class _MessageViewImpl extends MessageView {
     required bool isMine,
     required List<_i3.MessageReceipt> receipts,
     int? thumbnailMediaId,
+    _i4.PollView? poll,
   }) : super._(
          message: message,
          senderUsername: senderUsername,
@@ -112,6 +125,7 @@ class _MessageViewImpl extends MessageView {
          isMine: isMine,
          receipts: receipts,
          thumbnailMediaId: thumbnailMediaId,
+         poll: poll,
        );
 
   /// Returns a shallow copy of this [MessageView]
@@ -125,6 +139,7 @@ class _MessageViewImpl extends MessageView {
     bool? isMine,
     List<_i3.MessageReceipt>? receipts,
     Object? thumbnailMediaId = _Undefined,
+    Object? poll = _Undefined,
   }) {
     return MessageView(
       message: message ?? this.message.copyWith(),
@@ -137,6 +152,7 @@ class _MessageViewImpl extends MessageView {
       thumbnailMediaId: thumbnailMediaId is int?
           ? thumbnailMediaId
           : this.thumbnailMediaId,
+      poll: poll is _i4.PollView? ? poll : this.poll?.copyWith(),
     );
   }
 }
