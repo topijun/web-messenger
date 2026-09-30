@@ -1226,7 +1226,7 @@ class _MessageBubble extends StatelessWidget {
               children: [
                 Column(
                   crossAxisAlignment: item.isMine
-                      ? CrossAxisAlignment.end
+                      ? CrossAxisAlignment.start
                       : CrossAxisAlignment.start,
                   children: [
                     if (!item.isMine && item.senderUsername != null && showAvatar)
@@ -1284,7 +1284,7 @@ class _MessageBubble extends StatelessWidget {
                 if (!item.isDeleted && item.reactions.isNotEmpty)
                   Positioned(
                     right: 0,
-                    bottom: -14,
+                    bottom: -20,
                     child: Wrap(
                       key: Key('messageReactions-${item.localKey}'),
                       spacing: 6,
