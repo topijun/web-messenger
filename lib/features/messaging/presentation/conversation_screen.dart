@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:messenger_client/messenger_client.dart';
 import 'package:mobile_messenger/core/lifecycle/app_resume_guard.dart';
 import 'package:mobile_messenger/features/chats/application/chat_controller.dart';
@@ -1224,62 +1225,76 @@ class _MessageBubble extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Column(
-                  crossAxisAlignment: item.isMine
-                      ? CrossAxisAlignment.start
-                      : CrossAxisAlignment.start,
-                  children: [
-                    if (!item.isMine && item.senderUsername != null && showAvatar)
-                      Text(item.senderUsername!, style: theme.textTheme.labelSmall),
-                    if (item.isDeleted)
-                      Text(
-                        'Message deleted',
-                        key: Key('deletedMessage-${item.localKey}'),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontStyle: FontStyle.italic,
+                _BubbleColumn(
+                  alignEnd: item.isMine,
+                  status: item.isMine && !item.isDeleted
+                      ? Text(
+                          _statusLabel(item.status),
+                          key: Key('receiptStatus-${item.localKey}'),
+                          style: theme.textTheme.labelSmall,
+                        )
+                      : null,
+                  footer: item.status == ConversationItemStatus.failed
+                      ? TextButton(
+                          key: Key('retryMessage-${item.localKey}'),
+                          onPressed: onRetry,
+                          child: const Text('Retry'),
+                        )
+                      : null,
+                  child: Column(
+                    crossAxisAlignment: item.isMine
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!item.isMine &&
+                          item.senderUsername != null &&
+                          showAvatar)
+                        Text(
+                          item.senderUsername!,
+                          style: theme.textTheme.labelSmall,
                         ),
-                      )
-                    else if (item.isMedia)
-                      _MediaBody(item: item, controller: controller)
-                    else if (item.isAudio && audioPlayback != null)
-                      _AudioBody(
-                        item: item,
-                        controller: controller,
-                        playback: audioPlayback,
-                      )
-                    else if (item.isPoll && item.poll != null)
-                      _PollBody(
-                        poll: item.poll!,
-                        enabled: !controller.isVoting(item.poll!.id),
-                        onSelect: (optionId) {
-                          controller.voteOnPoll(
-                            pollId: item.poll!.id,
-                            optionId: optionId,
-                          );
-                        },
-                      )
-                    else
-                      Text(item.text, key: Key('messageText-${item.localKey}')),
-                    if (item.isEdited)
-                      Text(
-                        'Edited',
-                        key: Key('editedLabel-${item.localKey}'),
-                        style: theme.textTheme.labelSmall,
-                      ),
-                    const SizedBox(height: 4),
-                    if (item.isMine && !item.isDeleted)
-                      Text(
-                        _statusLabel(item.status),
-                        key: Key('receiptStatus-${item.localKey}'),
-                        style: theme.textTheme.labelSmall,
-                      ),
-                    if (item.status == ConversationItemStatus.failed)
-                      TextButton(
-                        key: Key('retryMessage-${item.localKey}'),
-                        onPressed: onRetry,
-                        child: const Text('Retry'),
-                      ),
-                  ],
+                      if (item.isDeleted)
+                        Text(
+                          'Message deleted',
+                          key: Key('deletedMessage-${item.localKey}'),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontStyle: FontStyle.italic,
+                          ),
+                        )
+                      else if (item.isMedia)
+                        _MediaBody(item: item, controller: controller)
+                      else if (item.isAudio && audioPlayback != null)
+                        _AudioBody(
+                          item: item,
+                          controller: controller,
+                          playback: audioPlayback,
+                        )
+                      else if (item.isPoll && item.poll != null)
+                        _PollBody(
+                          poll: item.poll!,
+                          enabled: !controller.isVoting(item.poll!.id),
+                          onSelect: (optionId) {
+                            controller.voteOnPoll(
+                              pollId: item.poll!.id,
+                              optionId: optionId,
+                            );
+                          },
+                        )
+                      else
+                        Text(
+                          item.text,
+                          key: Key('messageText-${item.localKey}'),
+                        ),
+                      if (item.isEdited)
+                        Text(
+                          'Edited',
+                          key: Key('editedLabel-${item.localKey}'),
+                          style: theme.textTheme.labelSmall,
+                        ),
+                      const SizedBox(height: 4),
+                    ],
+                  ),
                 ),
                 if (!item.isDeleted && item.reactions.isNotEmpty)
                   Positioned(
@@ -1402,6 +1417,156 @@ class _MessageBubble extends StatelessWidget {
       ConversationItemStatus.failed => 'Failed',
       ConversationItemStatus.received => '',
     };
+  }
+}
+
+/// Shrink-wraps message content and the delivery receipt.
+///
+/// Own messages keep the content on the right. The receipt stays on the left
+/// so it does not sit under the reaction chips.
+class _BubbleColumn extends MultiChildRenderObjectWidget {
+  _BubbleColumn({
+    required this.alignEnd,
+    required Widget child,
+    this.status,
+    this.footer,
+  }) : super(children: <Widget>[child, ?status, ?footer]);
+
+  final bool alignEnd;
+  final Widget? status;
+  final Widget? footer;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderBubbleColumn(
+      alignEnd: alignEnd,
+      hasStatus: status != null,
+      hasFooter: footer != null,
+    );
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderBubbleColumn renderObject,
+  ) {
+    renderObject
+      ..alignEnd = alignEnd
+      ..hasStatus = status != null
+      ..hasFooter = footer != null;
+  }
+}
+
+class _BubbleParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderBubbleColumn extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _BubbleParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _BubbleParentData> {
+  _RenderBubbleColumn({
+    required bool alignEnd,
+    required bool hasStatus,
+    required bool hasFooter,
+  }) : _alignEnd = alignEnd,
+       _hasStatus = hasStatus,
+       _hasFooter = hasFooter;
+
+  bool _alignEnd;
+  bool _hasStatus;
+  bool _hasFooter;
+
+  set alignEnd(bool value) {
+    if (_alignEnd == value) {
+      return;
+    }
+    _alignEnd = value;
+    markNeedsLayout();
+  }
+
+  set hasStatus(bool value) {
+    if (_hasStatus == value) {
+      return;
+    }
+    _hasStatus = value;
+    markNeedsLayout();
+  }
+
+  set hasFooter(bool value) {
+    if (_hasFooter == value) {
+      return;
+    }
+    _hasFooter = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _BubbleParentData) {
+      child.parentData = _BubbleParentData();
+    }
+  }
+
+  RenderBox? get _statusChild {
+    if (!_hasStatus) {
+      return null;
+    }
+    return childAfter(firstChild!);
+  }
+
+  RenderBox? get _footerChild {
+    if (!_hasFooter) {
+      return null;
+    }
+    final content = firstChild!;
+    if (_hasStatus) {
+      return childAfter(childAfter(content)!);
+    }
+    return childAfter(content);
+  }
+
+  @override
+  void performLayout() {
+    final content = firstChild!;
+    final status = _statusChild;
+    final footer = _footerChild;
+    final loose = constraints.loosen();
+    content.layout(loose, parentUsesSize: true);
+    status?.layout(loose, parentUsesSize: true);
+    footer?.layout(loose, parentUsesSize: true);
+
+    var width = content.size.width;
+    if (status != null && status.size.width > width) {
+      width = status.size.width;
+    }
+    if (footer != null && footer.size.width > width) {
+      width = footer.size.width;
+    }
+
+    var y = 0.0;
+    void place(RenderBox child, {required bool atEnd}) {
+      final data = child.parentData! as _BubbleParentData;
+      data.offset = Offset(atEnd ? width - child.size.width : 0, y);
+      y += child.size.height;
+    }
+
+    place(content, atEnd: _alignEnd);
+    if (status != null) {
+      place(status, atEnd: false);
+    }
+    if (footer != null) {
+      place(footer, atEnd: _alignEnd);
+    }
+    size = constraints.constrain(Size(width, y));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    defaultPaint(context, offset);
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    return defaultHitTestChildren(result, position: position);
   }
 }
 
