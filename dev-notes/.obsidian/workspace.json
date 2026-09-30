@@ -8,20 +8,6 @@
         "type": "tabs",
         "children": [
           {
-            "id": "c7f55c507de16be9",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Mobile Messenger.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Mobile Messenger"
-            }
-          },
-          {
             "id": "a0638d41c7d44322",
             "type": "leaf",
             "state": {
@@ -36,35 +22,35 @@
             }
           },
           {
-            "id": "f2d13fa4f7341a32",
+            "id": "933bf79a62acaed9",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Web Task Description.md",
+                "file": "Mobile Messenger.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Web Task Description"
+              "title": "Mobile Messenger"
             }
           },
           {
-            "id": "456d48c57613e9b5",
+            "id": "2487f1e16a44f38e",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Web Test Cases.md",
+                "file": "Mobile Messenger.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Web Test Cases"
+              "title": "Mobile Messenger"
             }
           },
           {
-            "id": "30c12ee2e1d2821f",
+            "id": "776fdb2f2cf4b4ed",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -78,7 +64,7 @@
             }
           },
           {
-            "id": "875ffd64dc6ba0d2",
+            "id": "28498e23003732c9",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -92,7 +78,35 @@
             }
           },
           {
-            "id": "8a0bd1851fb1b685",
+            "id": "f0f19800fe747f22",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Architecture.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Architecture"
+            }
+          },
+          {
+            "id": "3a58ab4d02a91287",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Data Structures.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Data Structures"
+            }
+          },
+          {
+            "id": "a63e07782be31dcc",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -106,63 +120,21 @@
             }
           },
           {
-            "id": "a000dca0459cb5ad",
+            "id": "3a2ef60163f7109c",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Web Roadmap.md",
+                "file": "Message Data Flow.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Web Roadmap"
-            }
-          },
-          {
-            "id": "001748c256d80123",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Setup.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Setup"
-            }
-          },
-          {
-            "id": "76c73c6d9cdd7d75",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Web Messenger.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Web Messenger"
-            }
-          },
-          {
-            "id": "61969cede9da1fa5",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Deployment.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Deployment"
+              "title": "Message Data Flow"
             }
           }
         ],
-        "currentTab": 10
+        "currentTab": 8
       }
     ],
     "direction": "vertical"
@@ -283,6 +255,20 @@
             }
           },
           {
+            "id": "7806bd888a7a54f5",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Messenger ERD.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Messenger ERD"
+            }
+          },
+          {
             "id": "60e1f438084c6441",
             "type": "leaf",
             "state": {
@@ -320,13 +306,27 @@
               "icon": "lucide-list",
               "title": "Outline"
             }
+          },
+          {
+            "id": "3a559ebcf2b92b09",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Messenger ERD.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Messenger ERD"
+            }
           }
         ],
-        "currentTab": 3
+        "currentTab": 4
       }
     ],
     "direction": "horizontal",
-    "width": 574.51171875
+    "width": 735.91015625
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -339,17 +339,23 @@
       "bases:Create new base": false
     }
   },
-  "active": "61969cede9da1fa5",
+  "active": "3a2ef60163f7109c",
   "lastOpenFiles": [
-    "Deployment.md",
+    "Message Data Flow.md",
     "Web Messenger.md",
-    "Setup.md",
-    "Web Roadmap.md",
+    "Messenger ERD.md",
+    "Chat.md",
+    "Data Structures.md",
+    "Architecture.md",
     "Mobile Task Description.md",
     "Mobile Test Cases.md",
+    "Mobile Messenger.md",
     "Web Test Cases.md",
     "Web Task Description.md",
-    "Mobile Messenger.md",
+    "Web Roadmap.md",
+    "Setup.md",
+    "Deployment.md",
+    "Readme.md",
     "Roadmap.md",
     "Known Issues.md",
     "Additional Features.md",
@@ -359,13 +365,7 @@
     "Push Notifications.md",
     "Message.md",
     "Mandatory Features.md",
-    "Architecture.md",
     "Domain Model.md",
-    "Data Structures.md",
-    "Poll.md",
-    "User.md",
-    "Profile.md",
-    "Chat.md",
-    "Serverpod.md"
+    "Poll.md"
   ]
 }
