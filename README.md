@@ -4,7 +4,7 @@ Web Messenger is the web version of Mobile Messenger. Both use one Flutter codeb
 
 The client runs on Android, iOS, and Web. The web client is published at <https://topijun.github.io/web-messenger/>.
 
-This is a student project. Encryption is application-layer encryption on the server, not end-to-end encryption.
+Encryption is application-layer encryption on the server, not end-to-end encryption.
 
 ## Features
 
@@ -205,45 +205,6 @@ Not encrypted (needed for auth, lookup, or listing):
 - ids, timestamps, membership, receipts
 - reaction emoji
 - `Chat.lastMessageAt` (sort only; the chat list does not store a message preview)
-
-## Testing
-
-`dev-notes/Web Test Cases.md` is the review checklist. It does not record which checks have been run. Automated tests cover the areas below. They do not by themselves prove every checklist item, and a passing count is not recorded here.
-
-```bash
-flutter analyze
-flutter test
-```
-
-Server tests (unit and Serverpod integration) live under `messenger_server/test/`:
-
-```bash
-cd messenger_server
-dart analyze
-dart test
-```
-
-Integration tests need the Docker test database. Running the whole server suite in parallel can collide on that database; run a single file if that happens.
-
-| Area | Flutter tests | Server tests |
-| --- | --- | --- |
-| Registration, login, verification, password reset | `test/features/auth/` | `messenger_registration_test.dart`, `password_reset_test.dart`, `auth_email_delivery_test.dart` |
-| Profile, avatar, theme | `test/features/profile/`, `test/core/theme/`, `test/app/` | `profile_test.dart`, `profile_image_test.dart` |
-| Contacts, invitations, groups, archive, unread | `test/features/chats/` | `chat_test.dart`, `contact_search_test.dart` |
-| Text, media, audio, receipts, typing, edit/delete | `test/features/messaging/conversation_screen_test.dart`, `conversation_controller_test.dart` | `message_test.dart`, `message_edit_delete_test.dart`, `chat_media_test.dart`, `message_audio_test.dart`, `typing_indicator_test.dart` |
-| Message search | `test/features/messaging/conversation_search_test.dart` | `message_search_test.dart` |
-| Group polls | `test/features/messaging/poll_test.dart` | `poll_test.dart` |
-| Message reactions | `test/features/messaging/conversation_reaction_test.dart` | `message_reaction_test.dart` |
-| Wide layout and two open conversations | `test/features/home/messenger_layout_test.dart` | — |
-| Encryption | — | `encryption_service_test.dart`, `encryption_test.dart`, `chat_encryption_regression_test.dart` |
-
-The layout tests include search, polls, and reactions staying inside the conversation where they were made.
-
-These checklist items are not covered by an automated test in this repository:
-
-- Opening the published GitHub Pages site
-- A measured check that a text message reaches delivered status in under 2 seconds
-- Logging out on one client and confirming that another client for the same account stays signed in
 
 ## Known limitations
 
