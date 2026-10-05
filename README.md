@@ -134,20 +134,57 @@ PostgreSQL
 ### Project structure
 
 ```text
-lib/
-  app/                 MaterialApp, theme wiring
-  core/                theme, API client, errors, resume
-  features/
-    auth/ chats/ messaging/ profile/ media/ device/ home/
-
-messenger_server/lib/src/
-  auth/ users/ chats/ messages/ media/ profiles/
-  encryption/ email/ devices/
-
-messenger_client/      generated Serverpod client
-dev-notes/             design notes and the web review checklist
-test/                  Flutter tests
+web-messenger/
+├── lib/                          # Flutter application
+│   ├── main.dart                 # App entry point
+│   ├── app/                      # MaterialApp and theme wiring
+│   ├── core/                     # API client, errors, theme, validation
+│   └── features/                 # UI, controllers, and repositories
+│       ├── auth/
+│       ├── chats/
+│       ├── messaging/
+│       ├── profile/
+│       ├── home/
+│       ├── media/
+│       └── device/
+├── test/                         # Flutter tests
+├── assets/                       # Client config, fonts, and images
+├── web/                          # Flutter web entry and icons
+├── android/                      # Android platform project
+├── ios/                          # iOS platform project
+├── linux/                        # Linux platform project
+├── macos/                        # macOS platform project
+├── windows/                      # Windows platform project
+│
+├── messenger_server/             # Serverpod backend
+│   ├── bin/main.dart             # Server entry point
+│   ├── config/                   # Serverpod configuration
+│   ├── migrations/               # Database migrations
+│   ├── docker-compose.yaml       # Local PostgreSQL
+│   ├── lib/
+│   │   ├── server.dart           # Server startup
+│   │   └── src/
+│   │       ├── auth/             # Endpoints, services, and .spy.yaml models
+│   │       ├── chats/
+│   │       ├── messages/
+│   │       ├── media/
+│   │       ├── profiles/
+│   │       ├── users/
+│   │       ├── devices/
+│   │       ├── encryption/
+│   │       ├── email/
+│   │       └── generated/        # Generated protocol and database code
+│   └── test/                     # Serverpod tests
+│
+├── messenger_client/             # Generated Serverpod client
+│   └── lib/src/protocol/
+│
+└── dev-notes/                    # Design notes and review checklists
 ```
+
+`lib/` is the Flutter app: screens, controllers, and the repositories that call the API. `messenger_server/` is the Serverpod backend. Its `config/` and `migrations/` are the server and database setup. Endpoint and service code sit next to the `.spy.yaml` models under `messenger_server/lib/src/`; `generated/` there is produced by Serverpod.
+
+`messenger_client/` is generated client code, not a second application. Flutter tests are in `test/`. Serverpod tests are in `messenger_server/test/`. `web/`, `android/`, `ios/`, and the other platform folders are Flutter build support, not feature code.
 
 ## Security / encryption
 
