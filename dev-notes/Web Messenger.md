@@ -1,4 +1,8 @@
 
+A web version of the Mobile Messenger project.
+
+---
+
 
 ERD:
 [[Messenger ERD]]
