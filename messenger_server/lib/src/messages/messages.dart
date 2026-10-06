@@ -1517,6 +1517,13 @@ class Messages {
             session,
             where: (t) => t.messageId.equals(messageId),
           );
+    final pollId = senderView?.poll?.id;
+    final pollVotes = pollId == null
+        ? const <PollVote>[]
+        : await PollVote.db.find(
+            session,
+            where: (t) => t.pollId.equals(pollId),
+          );
     for (final userId in userIds.toSet()) {
       final payload = senderView == null
           ? event
@@ -1530,7 +1537,9 @@ class Messages {
                 isMine: userId == senderView.message.senderId,
                 receipts: senderView.receipts,
                 thumbnailMediaId: senderView.thumbnailMediaId,
-                poll: senderView.poll,
+                poll: senderView.poll?.copyWith(
+                  myOptionId: _votedOptionId(pollVotes, userId),
+                ),
                 reactions: senderView.message.deletedAt == null
                     ? _reactionViews(reactionRows, userId)
                     : const [],
@@ -1549,6 +1558,16 @@ class Messages {
         );
       }
     }
+  }
+
+  /// The recipient's own vote. Counts on the poll stay shared.
+  int? _votedOptionId(List<PollVote> votes, int userId) {
+    for (final vote in votes) {
+      if (vote.userId == userId) {
+        return vote.optionId;
+      }
+    }
+    return null;
   }
 
   int _pageSize(int? limit) {

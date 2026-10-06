@@ -712,7 +712,7 @@ class ConversationController extends ChangeNotifier {
       return;
     }
     if (_isMessageKind(event.kind) && event.message != null) {
-      _upsertView(event.message!);
+      _upsertView(event.message!, keepOwnPollSelection: true);
       _sort();
       notifyListeners();
       if (event.kind == ChatEventKind.message) {
@@ -1017,7 +1017,7 @@ class ConversationController extends ChangeNotifier {
     _sort();
   }
 
-  void _upsertView(MessageView view) {
+  void _upsertView(MessageView view, {bool keepOwnPollSelection = false}) {
     final id = view.message.id;
     if (id == null) {
       return;
@@ -1035,12 +1035,20 @@ class ConversationController extends ChangeNotifier {
     final existing = _items.indexWhere((item) => item.serverId == id);
     if (existing >= 0) {
       final previous = _items[existing];
-      _items[existing] = next.isDeleted
+      var updated = next.isDeleted
           ? next
           : next.copyWith(
               pendingBytes: previous.pendingBytes,
               mimeType: previous.mimeType,
             );
+      final ownPoll = previous.poll;
+      final incomingPoll = updated.poll;
+      if (keepOwnPollSelection && ownPoll != null && incomingPoll != null) {
+        updated = updated.copyWith(
+          poll: incomingPoll.copyWith(myOptionId: ownPoll.myOptionId),
+        );
+      }
+      _items[existing] = updated;
       return;
     }
     if (view.isMine) {

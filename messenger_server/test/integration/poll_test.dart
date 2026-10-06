@@ -275,6 +275,100 @@ void main() {
       },
     );
 
+    test(
+      'when another member votes then each client keeps its own selection',
+      () async {
+        final aliceEvents = <ChatEvent>[];
+        final bobEvents = <ChatEvent>[];
+        final aliceSubscription = session.messages
+            .createStream<ChatEvent>(
+              Messages.channelForUser(alice.user.id!),
+            )
+            .listen(aliceEvents.add);
+        final bobSubscription = session.messages
+            .createStream<ChatEvent>(Messages.channelForUser(bob.user.id!))
+            .listen(bobEvents.add);
+
+        final created = await endpoints.message.createPoll(
+          alice.client,
+          chatId: groupId,
+          question: 'Where should we go?',
+          options: ['Helsinki', 'Tampere'],
+          anonymous: false,
+        );
+        final pollId = created.poll!.id;
+        final helsinki = created.poll!.options[0].id;
+        final tampere = created.poll!.options[1].id;
+
+        final aliceVote = await endpoints.message.vote(
+          alice.client,
+          pollId: pollId,
+          optionId: helsinki,
+        );
+        expect(aliceVote.poll?.myOptionId, helsinki);
+        expect(aliceVote.poll?.totalVotes, 1);
+        expect(aliceVote.poll?.options[0].voteCount, 1);
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        final bobSawAlice = bobEvents.lastWhere(
+          (event) => event.kind == ChatEventKind.pollUpdated,
+        );
+        expect(bobSawAlice.message?.poll?.myOptionId, isNull);
+        expect(bobSawAlice.message?.poll?.totalVotes, 1);
+        expect(bobSawAlice.message?.poll?.options[0].voteCount, 1);
+
+        aliceEvents.clear();
+        final bobVote = await endpoints.message.vote(
+          bob.client,
+          pollId: pollId,
+          optionId: tampere,
+        );
+        expect(bobVote.poll?.myOptionId, tampere);
+        expect(bobVote.poll?.totalVotes, 2);
+        expect(bobVote.poll?.options[0].voteCount, 1);
+        expect(bobVote.poll?.options[1].voteCount, 1);
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        final aliceSawBob = aliceEvents.lastWhere(
+          (event) => event.kind == ChatEventKind.pollUpdated,
+        );
+        expect(aliceSawBob.message?.poll?.myOptionId, helsinki);
+        expect(aliceSawBob.message?.poll?.totalVotes, 2);
+        expect(aliceSawBob.message?.poll?.options[0].voteCount, 1);
+        expect(aliceSawBob.message?.poll?.options[1].voteCount, 1);
+        expect(
+          bobEvents
+              .lastWhere((event) => event.kind == ChatEventKind.pollUpdated)
+              .message
+              ?.poll
+              ?.myOptionId,
+          tampere,
+        );
+
+        bobEvents.clear();
+        final changed = await endpoints.message.vote(
+          alice.client,
+          pollId: pollId,
+          optionId: tampere,
+        );
+        expect(changed.poll?.myOptionId, tampere);
+        expect(changed.poll?.totalVotes, 2);
+        expect(changed.poll?.options[0].voteCount, 0);
+        expect(changed.poll?.options[1].voteCount, 2);
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        final bobSawChange = bobEvents.lastWhere(
+          (event) => event.kind == ChatEventKind.pollUpdated,
+        );
+        expect(bobSawChange.message?.poll?.myOptionId, tampere);
+        expect(bobSawChange.message?.poll?.options[1].voteCount, 2);
+        expect(bobSawChange.message?.poll?.totalVotes, 2);
+
+        await aliceSubscription.cancel();
+        await bobSubscription.cancel();
+      },
+    );
+
     test('when poll input is invalid then it is rejected', () async {
       await expectLater(
         () => endpoints.message.createPoll(

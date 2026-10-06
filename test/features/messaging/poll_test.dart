@@ -122,6 +122,196 @@ void main() {
     expect(find.byIcon(Icons.radio_button_checked), findsNothing);
   });
 
+  testWidgets('another voter updates counts without moving this selection', (
+    tester,
+  ) async {
+    final messages = FakeMessageRepository(
+      history: [
+        testMessageView(
+          id: 4,
+          chatId: 2,
+          type: MessageType.poll,
+          text: '',
+          senderUsername: 'Alice',
+          poll: _poll(
+            myOptionId: 101,
+            options: [
+              PollOptionView(
+                id: 101,
+                text: 'Helsinki',
+                position: 0,
+                voteCount: 1,
+                voters: const ['Alice'],
+              ),
+              PollOptionView(
+                id: 102,
+                text: 'Tampere',
+                position: 1,
+                voteCount: 0,
+                voters: const [],
+              ),
+              PollOptionView(
+                id: 103,
+                text: 'Turku',
+                position: 2,
+                voteCount: 0,
+                voters: const [],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    await _pump(tester, messages, testGroupChat());
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('pollOption-101')),
+        matching: find.byIcon(Icons.radio_button_checked),
+      ),
+      findsOneWidget,
+    );
+
+    messages.events.add(
+      ChatEvent(
+        kind: ChatEventKind.pollUpdated,
+        chatId: 2,
+        message: testMessageView(
+          id: 4,
+          chatId: 2,
+          type: MessageType.poll,
+          text: '',
+          senderUsername: 'Alice',
+          poll: _poll(
+            myOptionId: 102,
+            options: [
+              PollOptionView(
+                id: 101,
+                text: 'Helsinki',
+                position: 0,
+                voteCount: 1,
+                voters: const ['Alice'],
+              ),
+              PollOptionView(
+                id: 102,
+                text: 'Tampere',
+                position: 1,
+                voteCount: 1,
+                voters: const ['Bob'],
+              ),
+              PollOptionView(
+                id: 103,
+                text: 'Turku',
+                position: 2,
+                voteCount: 0,
+                voters: const [],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('2 votes'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('pollVoters-102'))).data,
+      'Bob',
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('pollOption-101')),
+        matching: find.byIcon(Icons.radio_button_checked),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('pollOption-102')),
+        matching: find.byIcon(Icons.radio_button_checked),
+      ),
+      findsNothing,
+    );
+
+    await tester.tap(find.byKey(const Key('pollOption-102')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('pollOption-102')),
+        matching: find.byIcon(Icons.radio_button_checked),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('pollOption-101')),
+        matching: find.byIcon(Icons.radio_button_checked),
+      ),
+      findsNothing,
+    );
+
+    messages.events.add(
+      ChatEvent(
+        kind: ChatEventKind.pollUpdated,
+        chatId: 2,
+        message: testMessageView(
+          id: 4,
+          chatId: 2,
+          type: MessageType.poll,
+          text: '',
+          senderUsername: 'Alice',
+          poll: _poll(
+            myOptionId: 103,
+            options: [
+              PollOptionView(
+                id: 101,
+                text: 'Helsinki',
+                position: 0,
+                voteCount: 0,
+                voters: const [],
+              ),
+              PollOptionView(
+                id: 102,
+                text: 'Tampere',
+                position: 1,
+                voteCount: 1,
+                voters: const ['Alice'],
+              ),
+              PollOptionView(
+                id: 103,
+                text: 'Turku',
+                position: 2,
+                voteCount: 1,
+                voters: const ['Carol'],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Carol'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('pollOption-102')),
+        matching: find.byIcon(Icons.radio_button_checked),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('pollOption-103')),
+        matching: find.byIcon(Icons.radio_button_checked),
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets('an anonymous poll does not show voter names', (tester) async {
     final messages = FakeMessageRepository(
       history: [
@@ -162,11 +352,16 @@ void main() {
   });
 }
 
-PollView _poll({bool anonymous = false, List<PollOptionView>? options}) {
+PollView _poll({
+  bool anonymous = false,
+  int? myOptionId,
+  List<PollOptionView>? options,
+}) {
   return PollView(
     id: 4,
     question: 'Where should we go?',
     anonymous: anonymous,
+    myOptionId: myOptionId,
     totalVotes: options == null
         ? 0
         : options.fold(0, (sum, option) => sum + option.voteCount),
