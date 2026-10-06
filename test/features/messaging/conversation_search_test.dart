@@ -226,7 +226,80 @@ void main() {
 
     expect(find.byKey(const Key('messageText-s-1')), findsOneWidget);
     expect(find.text('Hello Bob'), findsWidgets);
+    _expectHighlighted(
+      tester,
+      'messageText-s-1',
+      const ['Hello', ' Bob'],
+      const [true, false],
+    );
   });
+
+  testWidgets('selecting a result highlights every match in that bubble', (
+    tester,
+  ) async {
+    final messages = FakeMessageRepository(
+      history: [
+        testMessageView(id: 3, text: 'hello there', senderUsername: 'Bob'),
+        testMessageView(id: 2, text: 'Nothing here', senderUsername: 'Bob'),
+        testMessageView(
+          id: 1,
+          text: 'Say hello, then Hello again',
+          senderUsername: 'Alice',
+          isMine: true,
+        ),
+      ],
+    );
+    await _pumpConversation(tester, messages);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('openMessageSearch')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('messageSearchField')),
+      'hello',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+    tester.testTextInput.hide();
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('searchResult-1')));
+    await tester.pumpAndSettle();
+
+    _expectHighlighted(
+      tester,
+      'messageText-s-1',
+      const ['Say ', 'hello', ', then ', 'Hello', ' again'],
+      const [false, true, false, true, false],
+    );
+    expect(
+      tester.widget<Text>(find.byKey(const Key('messageText-s-2'))).data,
+      'Nothing here',
+    );
+    expect(
+      tester.widget<Text>(find.byKey(const Key('messageText-s-3'))).data,
+      'hello there',
+    );
+  });
+}
+
+void _expectHighlighted(
+  WidgetTester tester,
+  String key,
+  List<String> parts,
+  List<bool> highlighted,
+) {
+  final text = tester.widget<Text>(find.byKey(Key(key)));
+  final span = text.textSpan! as TextSpan;
+  final children = span.children!.cast<TextSpan>();
+  expect(children.map((span) => span.text).toList(), parts);
+  for (var index = 0; index < children.length; index++) {
+    final color = children[index].style?.backgroundColor;
+    if (highlighted[index]) {
+      expect(color, const Color(0xFFFFF59D));
+    } else {
+      expect(color, isNull);
+    }
+  }
 }
 
 Future<void> _pumpConversation(

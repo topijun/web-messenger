@@ -312,6 +312,7 @@ class ConversationController extends ChangeNotifier {
   var _searching = false;
   var _searchPerformed = false;
   String? _searchError;
+  var _searchQuery = '';
   int? _focusedMessageId;
   final Set<int> _votingPollIds = {};
   final Set<String> _reacting = {};
@@ -341,6 +342,12 @@ class ConversationController extends ChangeNotifier {
 
   /// Search failure copy, separate from the conversation banner.
   String? get searchError => _searchError;
+
+  /// Trimmed query from the latest [search] call.
+  ///
+  /// Empty when search was cleared or the query was blank. Highlighting uses
+  /// this rather than the text field, which can change before the next search.
+  String get searchQuery => _searchQuery;
 
   /// Server id of the search result the list should bring into view.
   int? get focusedMessageId => _focusedMessageId;
@@ -431,6 +438,7 @@ class ConversationController extends ChangeNotifier {
   Future<void> search(String query) async {
     final trimmed = query.trim();
     _focusedMessageId = null;
+    _searchQuery = trimmed;
     if (trimmed.isEmpty) {
       _searchResults = const [];
       _searchPerformed = false;
@@ -464,6 +472,7 @@ class ConversationController extends ChangeNotifier {
     _searchPerformed = false;
     _searching = false;
     _searchError = null;
+    _searchQuery = '';
     _focusedMessageId = null;
     notifyListeners();
   }

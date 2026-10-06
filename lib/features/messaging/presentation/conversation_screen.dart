@@ -667,6 +667,11 @@ class _ConversationScreenState extends State<ConversationScreen>
                         item.serverId == _controller.focusedMessageId
                     ? _messageFocusKey
                     : null,
+                highlightQuery:
+                    item.serverId != null &&
+                        item.serverId == _controller.focusedMessageId
+                    ? _controller.searchQuery
+                    : null,
                 onRetry: () => _controller.retry(item.localKey),
                 onEdit: item.canEdit ? () => _startEdit(item) : null,
                 onDelete: item.canDelete ? () => _confirmDelete(item) : null,
@@ -1175,6 +1180,59 @@ class _Composer extends StatelessWidget {
   }
 }
 
+/// Message text with the current search query marked inside the bubble.
+///
+/// Matching is a case-insensitive literal substring, the same rule the search
+/// uses. Every occurrence is marked. Other characters keep the normal style.
+class _SearchableMessageText extends StatelessWidget {
+  const _SearchableMessageText({
+    required this.text,
+    required this.localKey,
+    required this.query,
+  });
+
+  final String text;
+  final String localKey;
+  final String? query;
+
+  @override
+  Widget build(BuildContext context) {
+    final key = Key('messageText-$localKey');
+    final needle = query?.trim() ?? '';
+    if (needle.isEmpty) {
+      return Text(text, key: key);
+    }
+    final pattern = RegExp(RegExp.escape(needle), caseSensitive: false);
+    if (!pattern.hasMatch(text)) {
+      return Text(text, key: key);
+    }
+    final theme = Theme.of(context);
+    final highlight = TextStyle(
+      backgroundColor: theme.brightness == Brightness.dark
+          ? const Color(0xFF8A6A00)
+          : const Color(0xFFFFF59D),
+    );
+    final spans = <InlineSpan>[];
+    var start = 0;
+    for (final match in pattern.allMatches(text)) {
+      if (match.start > start) {
+        spans.add(TextSpan(text: text.substring(start, match.start)));
+      }
+      spans.add(
+        TextSpan(
+          text: text.substring(match.start, match.end),
+          style: highlight,
+        ),
+      );
+      start = match.end;
+    }
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start)));
+    }
+    return Text.rich(TextSpan(children: spans), key: key);
+  }
+}
+
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.item,
@@ -1183,6 +1241,7 @@ class _MessageBubble extends StatelessWidget {
     required this.playback,
     required this.onRetry,
     this.focusKey,
+    this.highlightQuery,
     this.onEdit,
     this.onDelete,
   });
@@ -1193,6 +1252,7 @@ class _MessageBubble extends StatelessWidget {
   final ChatAudioPlayback? playback;
   final VoidCallback onRetry;
   final Key? focusKey;
+  final String? highlightQuery;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -1282,9 +1342,10 @@ class _MessageBubble extends StatelessWidget {
                           },
                         )
                       else
-                        Text(
-                          item.text,
-                          key: Key('messageText-${item.localKey}'),
+                        _SearchableMessageText(
+                          text: item.text,
+                          localKey: item.localKey,
+                          query: highlightQuery,
                         ),
                       if (item.isEdited)
                         Text(
