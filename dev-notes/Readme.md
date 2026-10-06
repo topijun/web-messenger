@@ -11,4 +11,4 @@ Update these sections:
 
 Additional features
 - message reactions
-- in-app notifications incuding unread message count
+- in-app notifications including unread message count

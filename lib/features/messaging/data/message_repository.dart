@@ -5,7 +5,7 @@ import 'package:messenger_client/messenger_client.dart';
 
 /// Server-backed messages, history, receipts, realtime events, and chat media.
 abstract class MessageRepository {
-  /// Sends a text message. [encryptedText] is plaintext in Phase 6+.
+  /// Sends a text message as [encryptedText].
   Future<MessageView> sendText({
     required int chatId,
     required String encryptedText,

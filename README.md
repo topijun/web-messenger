@@ -77,6 +77,14 @@ In a group chat, a member can create a single-choice poll and mark it anonymous 
 - A public poll shows who voted for each option. An anonymous poll does not
 - The question and options are encrypted on the server, like message text
 
+## Additional Features
+
+### In-app notifications
+
+User sees a number indicating unread messages and incoming invitations on the home screen. 
+
+- If a conversation is marked as muted, the notifications will show up visually muted color
+
 ### Message reactions
 
 A message can be reacted to with a fixed set of emoji: ❤️ 👍 😂 😮 😢 😡.
@@ -122,9 +130,9 @@ PostgreSQL
 
 ### Technologies
 
-- Flutter, Dart 3.11.5
-- Serverpod 3.4.13 (Email IDP and the Flutter client)
-- PostgreSQL 16 (Docker, `pgvector/pgvector:pg16`)
+- Flutter, Dart
+- Serverpod (Email IDP and the Flutter client)
+- PostgreSQL (Docker)
 - `cryptography` — AES-256-GCM on the server
 - `mailer` — Gmail SMTP for verification and password-reset mail
 - `image_picker`, `video_player`, `video_thumbnail`
