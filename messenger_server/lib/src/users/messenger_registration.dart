@@ -61,8 +61,10 @@ class MessengerRegistration {
         transaction: transaction,
       );
       if (accountRequest == null) {
-        // Official Email IDP hides whether the email is already registered.
-        return accountRequestId;
+        // Email IDP already logged the specific reason and returned an id
+        // that does not belong to a request. Fail the start without naming
+        // that reason.
+        throw MessengerRegistrationIncompleteException();
       }
 
       await MessengerRegistrationRequest.db.deleteWhere(

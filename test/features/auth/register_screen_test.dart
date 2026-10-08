@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:messenger_client/messenger_client.dart';
+import 'package:mobile_messenger/core/errors/auth_error_mapper.dart';
 import 'package:mobile_messenger/features/auth/application/auth_controller.dart';
 import 'package:mobile_messenger/features/auth/presentation/auth_scope.dart';
 import 'package:mobile_messenger/features/auth/presentation/register_screen.dart';
@@ -17,7 +19,10 @@ void main() {
       find.widgetWithText(TextFormField, 'Email'),
       'topi@example.com',
     );
-    await tester.enterText(find.widgetWithText(TextFormField, 'Username'), 'to');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Username'),
+      'to',
+    );
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Password'),
       'password',
@@ -29,7 +34,10 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
     await tester.pump();
 
-    expect(find.text('Username must be at least 3 characters.'), findsOneWidget);
+    expect(
+      find.text('Username must be at least 3 characters.'),
+      findsOneWidget,
+    );
     expect(
       find.text('Password does not meet the strength requirements.'),
       findsOneWidget,
@@ -65,7 +73,9 @@ void main() {
     expect(find.text('Passwords do not match.'), findsOneWidget);
   });
 
-  testWidgets('valid registration starts the verification step', (tester) async {
+  testWidgets('valid registration starts the verification step', (
+    tester,
+  ) async {
     final repository = FakeAuthRepository();
     final auth = AuthController(
       repository: repository,
@@ -98,6 +108,44 @@ void main() {
     expect(find.text('Verify email'), findsOneWidget);
     expect(find.textContaining('topi@example.com'), findsOneWidget);
   });
+
+  testWidgets(
+    'a registration that cannot start stays on the form with a generic error',
+    (tester) async {
+      final auth = await _readyAuth(
+        repository: FakeAuthRepository(
+          startRegistrationError: MessengerRegistrationIncompleteException(),
+        ),
+      );
+
+      await tester.pumpWidget(_harness(auth));
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Email'),
+        'topi@example.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Username'),
+        'Topi.J',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Password'),
+        'Password1!',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Confirm password'),
+        'Password1!',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Verify email'), findsNothing);
+      expect(
+        find.text(AuthErrorMapper.registrationCouldNotStartMessage),
+        findsOneWidget,
+      );
+      expect(find.textContaining('already registered'), findsNothing);
+    },
+  );
 }
 
 Future<AuthController> _readyAuth({FakeAuthRepository? repository}) async {

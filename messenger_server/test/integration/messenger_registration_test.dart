@@ -264,6 +264,41 @@ void main() {
   );
 
   withServerpod(
+    'Given an email that is already registered',
+    rollbackDatabase: RollbackDatabase.disabled,
+    (sessionBuilder, endpoints) {
+      late Session session;
+
+      setUp(() async {
+        session = sessionBuilder.build();
+        await _cleanup(session);
+        await _register(
+          endpoints,
+          sessionBuilder,
+          email: 'alice@example.com',
+          username: 'Alice_1',
+        );
+      });
+
+      tearDown(() => _cleanup(session));
+
+      test(
+        'when starting registration with that email then start fails without naming the email',
+        () async {
+          await expectLater(
+            () => endpoints.messengerRegistration.start(
+              sessionBuilder,
+              email: 'alice@example.com',
+              username: 'Different_1',
+            ),
+            throwsA(isA<MessengerRegistrationIncompleteException>()),
+          );
+        },
+      );
+    },
+  );
+
+  withServerpod(
     'Given an official Email IDP registration without a reserved username',
     rollbackDatabase: RollbackDatabase.disabled,
     (sessionBuilder, endpoints) {

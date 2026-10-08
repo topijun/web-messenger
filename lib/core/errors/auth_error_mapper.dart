@@ -7,6 +7,11 @@ class AuthErrorMapper {
   static const verificationFailedMessage =
       'Verification could not be completed. Please check the code and try again.';
 
+  /// Shown when registration cannot be started, without saying why.
+  static const registrationCouldNotStartMessage =
+      'Registration could not be started.\n'
+      'Please check your email address and username and try again.';
+
   /// Maps a login failure.
   static String login(Object error) {
     if (error is EmailAccountLoginException) {
@@ -39,6 +44,9 @@ class AuthErrorMapper {
       }
       return 'Please check your details and try again.';
     }
+    if (error is MessengerRegistrationIncompleteException) {
+      return registrationCouldNotStartMessage;
+    }
     return _connectionOrUnexpected(error);
   }
 
@@ -58,7 +66,8 @@ class AuthErrorMapper {
   /// Maps a password-reset [start] failure without revealing account existence.
   static String passwordResetStart(Object error) {
     if (error is EmailAccountPasswordResetException &&
-        error.reason == EmailAccountPasswordResetExceptionReason.tooManyAttempts) {
+        error.reason ==
+            EmailAccountPasswordResetExceptionReason.tooManyAttempts) {
       return 'Too many password reset attempts. Please try again later.';
     }
     return _connectionOrUnexpected(error);

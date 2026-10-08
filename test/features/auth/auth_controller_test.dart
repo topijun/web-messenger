@@ -103,6 +103,33 @@ void main() {
     expect(auth.hasPendingPassword, isFalse);
   });
 
+  test(
+    'a registration that cannot start shows a generic error and discards the password',
+    () async {
+      final auth = AuthController(
+        repository: FakeAuthRepository(
+          startRegistrationError: MessengerRegistrationIncompleteException(),
+        ),
+        session: FakeAuthSession(),
+      );
+
+      final started = await auth.startRegistration(
+        email: 'topi@example.com',
+        username: 'Topi.J',
+        password: 'Password1!',
+      );
+
+      expect(started, isFalse);
+      expect(auth.state.status, AuthStatus.error);
+      expect(
+        auth.state.errorMessage,
+        AuthErrorMapper.registrationCouldNotStartMessage,
+      );
+      expect(auth.state.errorMessage, isNot(contains('already registered')));
+      expect(auth.hasPendingPassword, isFalse);
+    },
+  );
+
   test('verifyRegistration success discards the password', () async {
     final repository = FakeAuthRepository(currentUser: testMessengerUser());
     final auth = AuthController(
